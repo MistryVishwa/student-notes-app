@@ -79,7 +79,7 @@ button:hover{
     border-radius:10px;
     margin-bottom:16px;
     text-align:center;
-    width:500px;
+    width:680px;
     box-shadow:0px 2px 8px rgba(0,0,0,0.08);
 }
 .site-header h1{
@@ -90,7 +90,7 @@ button:hover{
 
 /* Footer styles */
 .site-footer{
-    width:500px;
+    width:680px;
     background:white;
     color:#666;
     padding:12px 20px;
@@ -99,4 +99,34 @@ button:hover{
     text-align:center;
     box-shadow:0px 2px 8px rgba(0,0,0,0.06);
     font-size:14px;
+}
+
+/* Main layout with sidebar */
+.main-content{
+    display:flex;
+    gap:20px;
+    width:680px;
+    align-items:flex-start;
+}
+
+.sidebar{
+    width:160px;
+    background:white;
+    padding:12px 14px;
+    border-radius:10px;
+    box-shadow:0px 2px 8px rgba(0,0,0,0.06);
+}
+
+.sidebar nav ul{
+    list-style:none;
+}
+
+.sidebar nav ul li{
+    margin:8px 0;
+}
+
+.sidebar nav ul li a{
+    color:#007bff;
+    text-decoration:none;
+    font-weight:600;
 }
