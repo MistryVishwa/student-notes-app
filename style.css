@@ -181,6 +181,24 @@ button:focus-visible{
 }
 
 /* =========================
+   Sorting Controls
+   ========================= */
+.sort-controls {
+    margin-top: 15px;
+    display: flex;
+    justify-content: flex-end;
+}
+
+#sortOrder {
+    padding: 8px;
+    border-radius: 5px;
+    border: 1px solid var(--border-color);
+    background: var(--input-bg);
+    color: var(--text-color);
+    cursor: pointer;
+}
+
+/* =========================
    Empty State
    ========================= */
 .empty-state {

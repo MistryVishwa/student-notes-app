@@ -77,6 +77,18 @@ function editNote(index){
     }
 }
 
+function sortNotes() {
+    const sortOrder = document.getElementById("sortOrder").value;
+    if (sortOrder === "asc") {
+        notes.sort((a, b) => a.localeCompare(b));
+    } else if (sortOrder === "desc") {
+        notes.sort((a, b) => b.localeCompare(a));
+    }
+
+    localStorage.setItem("notes", JSON.stringify(notes));
+    displayNotes();
+}
+
 function deleteNote(index){
     notes.splice(index,1);
 
