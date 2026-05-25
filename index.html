@@ -18,10 +18,17 @@
     <div class="container">
       <div class="input-area">
         <input id="noteTitle" placeholder="Title (optional)" />
-        <textarea id="noteInput" placeholder="Write your note here..."></textarea>
-        <input id="noteTags" placeholder="Tags (comma separated)" />
-        <input id="noteSubject" placeholder="Subject / Category (optional)" />
-        <button onclick="addNote()">Add Note</button>
+        <textarea id="noteInput" placeholder="Write your note here... (Markdown supported)"></textarea>
+        <div class="input-row">
+          <input id="noteTags" placeholder="Tags (comma separated)" />
+          <input id="noteSubject" placeholder="Subject / Category (optional)" />
+        </div>
+        <div class="input-row actions">
+          <label><input type="checkbox" id="livePreviewToggle" /> Live preview</label>
+          <button onclick="addNote()">Add Note</button>
+        </div>
+
+        <div id="livePreview" class="live-preview" aria-hidden="true"></div>
       </div>
 
       <section class="search-area">
@@ -43,6 +50,9 @@
   </div>
 
   <script src="script.js"></script>
+  <!-- Markdown renderer and sanitizer -->
+  <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/dompurify@2.4.0/dist/purify.min.js"></script>
 </body>
 </html>
 

@@ -95,8 +95,27 @@ function displayNotes(){
             if((note.subject || '').toLowerCase() !== subjectFilter) return;
         }
 
-        const titleHtml = note.title ? `<div class="note-title">${highlightHtml(note.title, q)}</div>` : '';
-        const contentHtml = `<div class="note-content">${highlightHtml(note.content, q)}</div>`;
+        const titleHtml = note.title ? `<div class="note-title">${escapeHtml(note.title)}</div>` : '';
+
+        // Render markdown to HTML safely and then highlight text nodes
+        let rawHtml = '';
+        try{
+            if(window.marked){
+                rawHtml = marked.parse(note.content || '');
+            } else {
+                rawHtml = escapeHtml(note.content || '');
+            }
+        }catch(e){
+            rawHtml = escapeHtml(note.content || '');
+        }
+
+        const safeHtml = (window.DOMPurify && DOMPurify.sanitize) ? DOMPurify.sanitize(rawHtml) : rawHtml;
+
+        // Use a temporary element to perform text-node highlighting
+        const tmp = document.createElement('div');
+        tmp.innerHTML = safeHtml;
+        if(q) highlightInElement(tmp, q);
+        const contentHtml = `<div class="note-content">${tmp.innerHTML}</div>`;
         const subjectHtml = note.subject ? `<div class="note-subject">Subject: ${escapeHtml(note.subject)}</div>` : '';
         const tagsHtml = (note.tags || []).length ? `<div class="note-tags">${note.tags.map(t=>`<span class="tag">${escapeHtml(t)}</span>`).join('')}</div>` : '';
 
@@ -109,6 +128,40 @@ function displayNotes(){
                 <button class="delete-btn" onclick="deleteNote(${index})" aria-label="Delete note">X</button>
             </div>
         `;
+    });
+}
+
+// Walk DOM and wrap matching text in <mark> elements (case-insensitive)
+function highlightInElement(element, query){
+    if(!query) return;
+    const q = String(query).trim();
+    if(!q) return;
+    const re = new RegExp(q.replace(/[.*+?^${}()|[\]\\]/g,'\\$&'), 'ig');
+
+    const walker = document.createTreeWalker(element, NodeFilter.SHOW_TEXT, null, false);
+    const nodes = [];
+    while(walker.nextNode()) nodes.push(walker.currentNode);
+
+    nodes.forEach(textNode => {
+        const parent = textNode.parentNode;
+        if(!parent) return;
+        const text = textNode.nodeValue;
+        if(!re.test(text)) return;
+        const frag = document.createDocumentFragment();
+        let lastIndex = 0;
+        text.replace(re, (match, offset) => {
+            const before = text.slice(lastIndex, offset);
+            if(before) frag.appendChild(document.createTextNode(before));
+            const mark = document.createElement('mark');
+            mark.className = 'highlight';
+            mark.textContent = match;
+            frag.appendChild(mark);
+            lastIndex = offset + match.length;
+            return match;
+        });
+        const after = text.slice(lastIndex);
+        if(after) frag.appendChild(document.createTextNode(after));
+        parent.replaceChild(frag, textNode);
     });
 }
 
@@ -139,6 +192,9 @@ document.addEventListener('DOMContentLoaded', () => {
     const searchInput = document.getElementById('searchInput');
     const filterTagsInput = document.getElementById('filterTags');
     const filterSubjectSelect = document.getElementById('filterSubject');
+    const livePreviewToggle = document.getElementById('livePreviewToggle');
+    const livePreview = document.getElementById('livePreview');
+    const noteInput = document.getElementById('noteInput');
 
     if(searchInput){
         searchInput.addEventListener('input', (e)=>{
@@ -163,6 +219,26 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     refreshFilters();
+    // Live preview handling
+    if(noteInput && livePreview && livePreviewToggle){
+        const updatePreview = () => {
+            const isOn = livePreviewToggle.checked;
+            livePreview.setAttribute('aria-hidden', isOn ? 'false' : 'true');
+            if(!isOn){
+                livePreview.style.display = 'none';
+                return;
+            }
+            livePreview.style.display = 'block';
+            const raw = noteInput.value || '';
+            let html = raw;
+            try{ html = window.marked ? marked.parse(raw) : escapeHtml(raw); }catch(e){ html = escapeHtml(raw); }
+            const safe = (window.DOMPurify && DOMPurify.sanitize) ? DOMPurify.sanitize(html) : html;
+            livePreview.innerHTML = safe;
+        };
+
+        noteInput.addEventListener('input', updatePreview);
+        livePreviewToggle.addEventListener('change', updatePreview);
+    }
 });
 
 function initTheme(){

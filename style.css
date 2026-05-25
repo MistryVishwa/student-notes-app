@@ -168,6 +168,30 @@ textarea{
     color:var(--text-color);
 }
 
+.input-row{ display:flex; gap:8px; }
+.input-row.actions{ align-items:center; justify-content:space-between; margin-top:8px }
+.input-row.actions label{ font-size:14px; color:var(--muted-text-color) }
+
+.live-preview{
+    margin-top:12px;
+    padding:12px;
+    border-radius:6px;
+    border:1px dashed var(--border-color);
+    background: color-mix(in srgb, var(--input-bg) 92%, transparent);
+    color:var(--text-color);
+    display:none;
+    max-height:220px;
+    overflow:auto;
+}
+
+/* Markdown rendering basics */
+.live-preview h1, .note-content h1{ font-size:20px; margin:6px 0 }
+.live-preview h2, .note-content h2{ font-size:18px; margin:6px 0 }
+.live-preview pre, .note-content pre{ background:var(--input-bg); padding:8px; border-radius:4px; overflow:auto }
+.live-preview code, .note-content code{ background:rgba(0,0,0,0.04); padding:2px 4px; border-radius:4px }
+.live-preview table, .note-content table{ border-collapse:collapse; width:100% }
+.live-preview table th, .live-preview table td, .note-content table th, .note-content table td{ border:1px solid var(--border-color); padding:6px }
+
 .filters{
     display:flex;
     gap:8px;
