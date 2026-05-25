@@ -2,6 +2,10 @@ let notes = JSON.parse(localStorage.getItem("notes")) || [];
 
 const THEME_KEY = "theme";
 
+
+displayNotes();
+initTheme();
+
 // Auto-save configuration
 const AUTO_SAVE_KEY = 'draft';
 const AUTO_SAVE_DELAY = 2000; // ms of inactivity before saving
@@ -147,6 +151,7 @@ function normalizeNotes(){
     renderSuggestedTags();
 }
 
+
 function addNote() {
     let title = document.getElementById("noteTitle").value.trim();
     let input = document.getElementById("noteInput");
@@ -190,8 +195,10 @@ function addNote() {
 
 function displayNotes(){
     let container = document.getElementById("notesContainer");
+
     let pinnedContainer = document.getElementById('pinnedContainer');
     const pinnedSection = document.getElementById('pinnedSection');
+
     container.innerHTML = "";
     pinnedContainer.innerHTML = "";
 
@@ -238,6 +245,20 @@ function displayNotes(){
 
         const safeHtml = (window.DOMPurify && DOMPurify.sanitize) ? DOMPurify.sanitize(rawHtml) : rawHtml;
 
+
+    notes.forEach((note,index)=>{
+        container.innerHTML += `
+            <div class="note">
+                ${escapeHtml(note)}
+                <button class="edit-btn"
+                onclick="editNote(${index})" aria-label="Edit note">
+                Edit
+                </button>
+                <button class="delete-btn"
+                onclick="deleteNote(${index})" aria-label="Delete note">
+                X
+                </button>
+
         // Use a temporary element to perform text-node highlighting
         const tmp = document.createElement('div');
         tmp.innerHTML = safeHtml;
@@ -259,6 +280,7 @@ function displayNotes(){
                 ${subjectHtml}
                 ${tagsHtml}
                 <button class="delete-btn" onclick="deleteNote('${note.id}')" aria-label="Delete note">X</button>
+
             </div>
         `;
 
@@ -289,6 +311,19 @@ function displayNotes(){
     // refresh suggested tag counts
     renderSuggestedTags();
 }
+
+
+function editNote(index){
+    let newNote = prompt("Edit your note:", notes[index]);
+    if(newNote !== null && newNote.trim() !== ""){
+        notes[index] = newNote.trim();
+        localStorage.setItem("notes", JSON.stringify(notes));
+        displayNotes();
+    }
+}
+
+function deleteNote(index){
+    notes.splice(index,1);
 
 // Walk DOM and wrap matching text in <mark> elements (case-insensitive)
 function highlightInElement(element, query){
@@ -329,6 +364,7 @@ function deleteNote(id){
     if(idx === -1) return;
     notes.splice(idx,1);
 
+
     localStorage.setItem(
         "notes",
         JSON.stringify(notes)
@@ -345,6 +381,7 @@ function togglePin(id){
     localStorage.setItem('notes', JSON.stringify(notes));
     displayNotes();
 }
+
 
 function toggleFavorite(id){
     const idx = notes.findIndex(n=>String(n.id) === String(id));
@@ -450,6 +487,7 @@ function initTheme(){
     const savedTheme = localStorage.getItem(THEME_KEY); // "light" | "dark" | null
     const systemPrefersDark = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches;
 
+
     const initialTheme = savedTheme === "dark" || savedTheme === "light"
         ? savedTheme
         : (systemPrefersDark ? "dark" : "light");
@@ -471,6 +509,33 @@ function applyTheme(theme, persist){
     if(persist){
         localStorage.setItem(THEME_KEY, theme);
     }
+
+
+    // Update toggle icon for better UX
+    const sunIcon = document.querySelector('.theme-icon--sun');
+    const moonIcon = document.querySelector('.theme-icon--moon');
+
+    if(sunIcon && moonIcon){
+        if(theme === 'dark'){
+            sunIcon.style.display = 'none';
+            moonIcon.style.display = 'inline';
+        } else {
+            sunIcon.style.display = 'inline';
+            moonIcon.style.display = 'none';
+        }
+    }
+}
+
+// Basic XSS protection since we render notes as HTML via innerHTML.
+function escapeHtml(str){
+    return String(str)
+        .replaceAll('&', '&amp;')
+        .replaceAll('<', '<')
+        .replaceAll('>', '>')
+        .replaceAll('"', '"')
+        .replaceAll("'", '&#039;');
+}
+
 }
 
 function escapeHtml(str){

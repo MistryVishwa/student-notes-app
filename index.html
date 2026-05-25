@@ -11,6 +11,23 @@
     <header class="app-header">
       <h1>Notes App</h1>
 
+
+      <button id="themeToggle" class="theme-toggle" type="button" aria-label="Toggle dark mode">
+        <span class="theme-icon theme-icon--sun" aria-hidden="true">☀️</span>
+        <span class="theme-icon theme-icon--moon" aria-hidden="true">🌙</span>
+      </button>
+    </header>
+
+    <div class="input-area">
+      <textarea id="noteInput" placeholder="Write your note here..."></textarea>
+      <button onclick="addNote()">Add Note</button>
+    </div>
+
+    <div id="notesContainer"></div>
+  </div>
+
+  <script src="script.js"></script>
+
     <header class="site-header">
         <h1>Student Notes App</h1>
     </header>
@@ -70,6 +87,7 @@
   <!-- Markdown renderer and sanitizer -->
   <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/dompurify@2.4.0/dist/purify.min.js"></script>
+
 </body>
 </html>
 

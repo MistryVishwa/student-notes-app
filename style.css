@@ -151,6 +151,7 @@ textarea{
                 border-color 0.3s ease;
 }
 
+
 /* Search & filters */
 .search-area{
     margin-top:16px;
@@ -316,8 +317,42 @@ button:focus-visible{
     border-radius:5px;
     position:relative;
 
+    padding-right: 85px;
+    word-wrap: break-word;
+
     transition: background-color 0.3s ease,
                 color 0.3s ease;
+}
+
+.edit-btn{
+    position:absolute;
+    top:5px;
+    right:45px;
+    background:var(--primary-bg);
+    color:var(--primary-text);
+    border:none;
+    width:auto;
+    padding:5px 10px;
+    cursor:pointer;
+    border-radius:6px;
+
+    transition: background-color 0.3s ease,
+                color 0.3s ease,
+                transform 0.1s ease;
+}
+
+.edit-btn:hover{
+    background:var(--primary-bg-hover);
+}
+
+.edit-btn:focus-visible{
+    outline:3px solid color-mix(in srgb, var(--primary-bg) 60%, transparent);
+    outline-offset:2px;
+
+
+    transition: background-color 0.3s ease,
+                color 0.3s ease;
+
 }
 
 .delete-btn{
@@ -330,6 +365,32 @@ button:focus-visible{
     width:auto;
     padding:5px 10px;
     cursor:pointer;
+
+
+    border-radius:6px;
+
+    transition: background-color 0.3s ease,
+                color 0.3s ease,
+                transform 0.1s ease;
+}
+
+.delete-btn:hover{
+    background:var(--danger-bg-hover);
+}
+
+.delete-btn:focus-visible{
+    outline:3px solid color-mix(in srgb, var(--danger-bg) 60%, transparent);
+    outline-offset:2px;
+}
+
+/* =========================
+   Responsive
+   ========================= */
+@media (max-width: 520px){
+    body{ padding:20px; }
+    .container{ width:100%; }
+}
+
 }
 
 /* Header styles */
@@ -391,3 +452,4 @@ button:focus-visible{
     text-decoration:none;
     font-weight:600;
 }
+
