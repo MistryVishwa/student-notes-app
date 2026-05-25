@@ -5,8 +5,61 @@
     font-family:Arial,sans-serif;
 }
 
+/* =========================
+   Theme variables
+   ========================= */
+:root{
+    --bg-color: #f4f4f4;
+    --surface-color: #ffffff;
+    --surface-2-color: #ffffcc;
+
+    --text-color: #111827;
+    --muted-text-color: #4b5563;
+
+    --border-color: #d1d5db;
+    --input-bg: #ffffff;
+
+    --primary-bg: #007bff;
+    --primary-bg-hover: #0056b3;
+    --primary-text: #ffffff;
+
+    --danger-bg: #dc2626;
+    --danger-bg-hover: #b91c1c;
+    --danger-text: #ffffff;
+
+    --shadow-color: rgba(0, 0, 0, 0.2);
+    --shadow-color-soft: rgba(0, 0, 0, 0.1);
+}
+
+[data-theme="dark"]{
+    --bg-color: #0f172a;         /* slate-900 */
+    --surface-color: #111827;   /* gray-900 */
+    --surface-2-color: #172554;/* blue-900 */
+
+    --text-color: #f9fafb;      /* gray-50 */
+    --muted-text-color: #cbd5e1;/* slate-300 */
+
+    --border-color: #374151;   /* gray-700 */
+    --input-bg: #0b1220;
+
+    --primary-bg: #3b82f6;          /* blue-500 */
+    --primary-bg-hover: #2563eb;    /* blue-600 */
+    --primary-text: #ffffff;
+
+    --danger-bg: #ef4444;       /* red-500 */
+    --danger-bg-hover: #dc2626; /* red-600 */
+    --danger-text: #ffffff;
+
+    --shadow-color: rgba(0, 0, 0, 0.6);
+    --shadow-color-soft: rgba(255, 255, 255, 0.06);
+}
+
+/* =========================
+   Layout
+   ========================= */
 body{
-    background:#f4f4f4;
+    background:var(--bg-color);
+    color:var(--text-color);
     display:flex;
     flex-direction:column;
     align-items:center;
@@ -15,24 +68,91 @@ body{
 
 .container{
     width:500px;
-    background:white;
+    background:var(--surface-color);
     padding:20px;
     border-radius:10px;
-    box-shadow:0px 0px 10px rgba(0,0,0,0.2);
+    box-shadow:0px 0px 10px var(--shadow-color);
 }
 
-h1{
-    text-align:center;
+.app-header{
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    position:relative;
     margin-bottom:20px;
 }
 
+.app-header h1{
+    text-align:center;
+    margin-bottom:0;
+    font-size:24px;
+}
+
+/* =========================
+   Toggle
+   ========================= */
+.theme-toggle{
+    position:absolute;
+    right:0;
+    top:50%;
+    transform:translateY(-50%);
+
+    width:42px;
+    height:42px;
+    border-radius:10px;
+    border:1px solid var(--border-color);
+    background:transparent;
+    color:var(--text-color);
+    cursor:pointer;
+
+    display:flex;
+    align-items:center;
+    justify-content:center;
+
+    transition: background-color 0.2s ease,
+                border-color 0.2s ease,
+                color 0.2s ease,
+                transform 0.15s ease;
+}
+
+.theme-toggle:hover{
+    background:var(--shadow-color-soft);
+}
+
+.theme-toggle:active{
+    transform:translateY(-50%) scale(0.98);
+}
+
+.theme-toggle:focus-visible{
+    outline:3px solid color-mix(in srgb, var(--primary-bg) 60%, transparent);
+    outline-offset:2px;
+}
+
+.theme-icon{
+    font-size:18px;
+    line-height:1;
+}
+
+/* =========================
+   Elements
+   ========================= */
 textarea{
     width:100%;
     height:100px;
     padding:10px;
-    border:1px solid #ccc;
+    border:1px solid var(--border-color);
     border-radius:5px;
     resize:none;
+    background:var(--input-bg);
+    color:var(--text-color);
+
+    transition: background-color 0.3s ease,
+                color 0.3s ease,
+                border-color 0.3s ease;
+}
+
+textarea::placeholder{
+    color: color-mix(in srgb, var(--muted-text-color) 80%, transparent);
 }
 
 button{
@@ -40,31 +160,45 @@ button{
     margin-top:10px;
     padding:10px;
     border:none;
-    background:#007bff;
-    color:white;
+    background:var(--primary-bg);
+    color:var(--primary-text);
     border-radius:5px;
     cursor:pointer;
     font-size:16px;
+
+    transition: background-color 0.3s ease,
+                color 0.3s ease,
+                border-color 0.3s ease,
+                transform 0.1s ease;
 }
 
 button:hover{
-    background:#0056b3;
+    background:var(--primary-bg-hover);
+}
+
+button:focus-visible{
+    outline:3px solid color-mix(in srgb, var(--primary-bg) 60%, transparent);
+    outline-offset:2px;
 }
 
 .note{
-    background:#ffffcc;
+    background:var(--surface-2-color);
+    color:var(--text-color);
     padding:15px;
     margin-top:15px;
     border-radius:5px;
     position:relative;
+
+    transition: background-color 0.3s ease,
+                color 0.3s ease;
 }
 
 .delete-btn{
     position:absolute;
     top:5px;
     right:10px;
-    background:red;
-    color:white;
+    background:var(--danger-bg);
+    color:var(--danger-text);
     border:none;
     width:auto;
     padding:5px 10px;
