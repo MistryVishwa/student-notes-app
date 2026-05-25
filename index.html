@@ -16,10 +16,23 @@
     </header>
 
     <div class="container">
-        <div class="input-area">
-            <textarea id="noteInput" placeholder="Write your note here..."></textarea>
-            <button onclick="addNote()">Add Note</button>
+      <div class="input-area">
+        <input id="noteTitle" placeholder="Title (optional)" />
+        <textarea id="noteInput" placeholder="Write your note here..."></textarea>
+        <input id="noteTags" placeholder="Tags (comma separated)" />
+        <input id="noteSubject" placeholder="Subject / Category (optional)" />
+        <button onclick="addNote()">Add Note</button>
+      </div>
+
+      <section class="search-area">
+        <input id="searchInput" placeholder="Search notes by title or content..." />
+        <div class="filters">
+          <input id="filterTags" placeholder="Filter by tag (comma separated)" />
+          <select id="filterSubject">
+            <option value="">All subjects</option>
+          </select>
         </div>
+      </section>
     </main>
 
     <footer class="site-footer">
