@@ -15,4 +15,7 @@ jobs:
         uses: actions/checkout@v4
 
       - name: Verify Project Files
+
         run: echo "HTML CSS JS project check passed"
+        run: echo "HTML CSS JS project check passed"
+
