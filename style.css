@@ -224,6 +224,14 @@ button:focus-visible{
                 color 0.3s ease;
 }
 
+.note-date{
+    display: block;
+    font-size: 0.75rem;
+    margin-top: 8px;
+    color: var(--muted-text-color);
+    font-style: italic;
+}
+
 .edit-btn{
     position:absolute;
     top:5px;
