@@ -164,6 +164,14 @@ function addNote() {
         return;
     }
 
+
+    if (notes.includes(noteText)) {
+        alert("This note already exists!");
+        return;
+    }
+
+    notes.push(noteText);
+
     const newNote = {
         id: Date.now(),
         title: title,
@@ -172,6 +180,7 @@ function addNote() {
         subject: subjectText || '',
         pinned: false
     };
+
 
     notes.unshift(newNote);
 
@@ -316,7 +325,14 @@ function displayNotes(){
 function editNote(index){
     let newNote = prompt("Edit your note:", notes[index]);
     if(newNote !== null && newNote.trim() !== ""){
-        notes[index] = newNote.trim();
+        let trimmedNote = newNote.trim();
+        
+        if (notes.includes(trimmedNote) && notes.indexOf(trimmedNote) !== index) {
+            alert("A note with this text already exists!");
+            return;
+        }
+
+        notes[index] = trimmedNote;
         localStorage.setItem("notes", JSON.stringify(notes));
         displayNotes();
     }
