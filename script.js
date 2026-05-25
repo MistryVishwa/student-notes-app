@@ -65,6 +65,48 @@ function clearDraft(){
 let searchQuery = "";
 let filterTags = [];
 let filterSubject = "";
+let globalTags = [];
+
+const TAGS_KEY = 'allTags';
+
+function loadGlobalTags(){
+    try{ globalTags = JSON.parse(localStorage.getItem(TAGS_KEY)) || []; }catch(e){ globalTags = []; }
+}
+
+function saveGlobalTags(){
+    try{ localStorage.setItem(TAGS_KEY, JSON.stringify(globalTags)); }catch(e){}
+}
+
+function addGlobalTags(tags){
+    if(!Array.isArray(tags)) return;
+    tags.forEach(t=>{
+        const val = String(t).trim();
+        if(!val) return;
+        const exists = globalTags.some(gt=>gt.toLowerCase() === val.toLowerCase());
+        if(!exists) globalTags.push(val);
+    });
+    saveGlobalTags();
+}
+
+function renderSuggestedTags(){
+    const container = document.getElementById('suggestedTags');
+    if(!container) return;
+    // compute tag counts from notes
+    const counts = {};
+    notes.forEach(n=> (n.tags||[]).forEach(t=>{ const k=t; counts[k] = (counts[k]||0)+1 }));
+    // merge globalTags with counts, sort by count desc then name
+    const list = Array.from(new Set([].concat(globalTags, Object.keys(counts))));
+    list.sort((a,b)=> (counts[b]||0) - (counts[a]||0) || a.localeCompare(b));
+    container.innerHTML = list.map(t=>`<button type="button" class="suggested-tag" onclick="applyTagFilter(${JSON.stringify(t)})">${escapeHtml(t)}${counts[t] ? ' ('+counts[t]+')' : ''}</button>`).join(' ');
+}
+
+function applyTagFilter(tag){
+    if(!tag) return;
+    filterTags = [String(tag)];
+    const filterTagsInput = document.getElementById('filterTags');
+    if(filterTagsInput) filterTagsInput.value = tag;
+    displayNotes();
+}
 
 normalizeNotes();
 displayNotes();
@@ -98,6 +140,11 @@ function normalizeNotes(){
     });
 
     localStorage.setItem('notes', JSON.stringify(notes));
+    // load and sync tags
+    loadGlobalTags();
+    // seed global tags from notes
+    notes.forEach(n=> addGlobalTags(n.tags||[]));
+    renderSuggestedTags();
 }
 
 function addNote() {
@@ -135,6 +182,10 @@ function addNote() {
 
     // Clear any saved draft after successful save
     clearDraft();
+
+    // update global tags list and suggestions
+    addGlobalTags(newNote.tags);
+    renderSuggestedTags();
 }
 
 function displayNotes(){
@@ -147,6 +198,9 @@ function displayNotes(){
     const q = searchQuery.trim();
     const tagsFilter = filterTags.map(t=>t.toLowerCase());
     const subjectFilter = filterSubject.toLowerCase();
+
+    const favoritesContainer = document.getElementById('favoritesContainer');
+    const favoritesSection = document.getElementById('favoritesSection');
 
     notes.forEach((note)=>{
         const combined = (note.title + ' ' + note.content).toLowerCase();
@@ -190,7 +244,7 @@ function displayNotes(){
         if(q) highlightInElement(tmp, q);
         const contentHtml = `<div class="note-content">${tmp.innerHTML}</div>`;
         const subjectHtml = note.subject ? `<div class="note-subject">Subject: ${escapeHtml(note.subject)}</div>` : '';
-        const tagsHtml = (note.tags || []).length ? `<div class="note-tags">${note.tags.map(t=>`<span class="tag">${escapeHtml(t)}</span>`).join('')}</div>` : '';
+        const tagsHtml = (note.tags || []).length ? `<div class="note-tags">${note.tags.map(t=>`<button type="button" class="tag" onclick="applyTagFilter(${JSON.stringify(t)})">${escapeHtml(t)}</button>`).join('')}</div>` : '';
 
         // Favorite & Pin buttons
         const favBtn = `<button class="favorite-btn ${note.favorite ? 'active' : ''}" onclick="toggleFavorite('${note.id}')" aria-label="Toggle favorite">${note.favorite ? '★' : '☆'}</button>`;
@@ -208,7 +262,10 @@ function displayNotes(){
             </div>
         `;
 
-        if(note.pinned){
+        if(note.favorite){
+            // favorites shown in dedicated section
+            if(favoritesContainer) favoritesContainer.innerHTML += noteHtml;
+        } else if(note.pinned){
             pinnedContainer.innerHTML += noteHtml;
         } else {
             container.innerHTML += noteHtml;
@@ -221,6 +278,16 @@ function displayNotes(){
     } else {
         pinnedSection.style.display = 'none';
     }
+    if(favoritesContainer && favoritesSection){
+        if(favoritesContainer.children.length){
+            favoritesSection.style.display = '';
+        } else {
+            favoritesSection.style.display = 'none';
+        }
+    }
+
+    // refresh suggested tag counts
+    renderSuggestedTags();
 }
 
 // Walk DOM and wrap matching text in <mark> elements (case-insensitive)
@@ -342,6 +409,19 @@ document.addEventListener('DOMContentLoaded', () => {
             scheduleAutoSave();
         });
     });
+    // Wire suggested tag add
+    const newTagInput = document.getElementById('newTagInput');
+    const addTagBtn = document.getElementById('addTagBtn');
+    if(addTagBtn && newTagInput){
+        addTagBtn.addEventListener('click', ()=>{
+            const v = (newTagInput.value||'').trim();
+            if(!v) return;
+            addGlobalTags([v]);
+            newTagInput.value = '';
+            renderSuggestedTags();
+        });
+        newTagInput.addEventListener('keydown', (e)=>{ if(e.key === 'Enter'){ e.preventDefault(); addTagBtn.click(); } });
+    }
     // Live preview handling
     if(noteInput && livePreview && livePreviewToggle){
         const updatePreview = () => {
