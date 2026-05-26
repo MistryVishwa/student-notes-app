@@ -1,0 +1,60 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Weekly Self Test</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+    <div class="container">
+        <div class="topbar">
+            <a class="nav-link" href="index.html">← Notes</a>
+            <div class="timer" aria-live="polite">
+                Time left: <span id="timerValue">--:--</span>
+            </div>
+        </div>
+
+        <h1>Weekly Self Test</h1>
+
+        <div class="selftest-controls">
+            <label class="checkbox">
+                <input type="checkbox" id="practiceMode" />
+                Practice Mode (results not saved)
+            </label>
+        </div>
+
+        <div id="questionCard" class="card" role="region" aria-label="Question"></div>
+
+        <div class="selftest-nav">
+            <button id="prevBtn" type="button">Previous</button>
+            <button id="nextBtn" type="button">Next</button>
+        </div>
+
+        <button id="submitBtn" type="button">Submit Test</button>
+
+        <div id="resultCard" class="card" hidden></div>
+
+        <div class="card" aria-label="Performance dashboard">
+            <h2 class="card-title">Performance Dashboard</h2>
+            <div class="stats">
+                <div class="stat">
+                    <div class="stat-label">Total tests attempted</div>
+                    <div class="stat-value" id="totalAttempts">0</div>
+                </div>
+                <div class="stat">
+                    <div class="stat-label">Last score</div>
+                    <div class="stat-value" id="lastScore">—</div>
+                </div>
+                <div class="stat">
+                    <div class="stat-label">Average score</div>
+                    <div class="stat-value" id="avgScore">—</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+<script src="self-test.js"></script>
+</body>
+</html>
