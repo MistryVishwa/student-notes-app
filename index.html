@@ -9,7 +9,9 @@
 <body>
   <div class="container">
     <header class="site-header">
-        <h1>Student Notes App</h1>
+        <h1><img src="https://cdn-icons-png.flaticon.com/512/7235/7235470.png" alt="note" width="50" height="50">Student Notes App</h1>
+        
+
     </header>
 
         <div class="page-links">
@@ -68,6 +70,9 @@
           <div id="assignmentsList" class="assignments-list"></div>
         </div>
       </aside>
+      
+
+
       <div class="input-area">
         <input id="noteTitle" placeholder="Title (optional)" />
         <textarea id="noteInput" placeholder="Write your note here... (Markdown supported)"></textarea>
@@ -120,9 +125,7 @@
       </section>
     </main>
 
-    <footer class="site-footer">
-        <p>© 2026 Student Notes App. All rights reserved.</p>
-    </footer>
+    
 
     <div class="sort-controls">
       <select id="sortOrder" onchange="sortNotes()">
@@ -148,7 +151,185 @@
         <div id="recentContainer" class="recent-container"></div>
       </section>
   </div>
+  <!-- =========================================================
+TASK REWARD SYSTEM
+========================================================= -->
 
+<section class="reward-section">
+
+  <div class="reward-header">
+
+    <span class="reward-label">
+      ACHIEVEMENTS
+    </span>
+
+    <h2>
+      Daily Task Progress
+    </h2>
+
+    <p>
+      Complete all tasks to unlock your reward.
+    </p>
+
+  </div>
+
+  <!-- TASK LIST -->
+
+  <div class="task-list">
+
+    <label class="task-item">
+
+      <input type="checkbox" class="task-checkbox">
+
+      <span>
+        Complete Java Practice
+      </span>
+
+    </label>
+
+    <label class="task-item">
+
+      <input type="checkbox" class="task-checkbox">
+
+      <span>
+        Revise Notes
+      </span>
+
+    </label>
+
+    <label class="task-item">
+
+      <input type="checkbox" class="task-checkbox">
+
+      <span>
+        Finish Assignment
+      </span>
+
+    </label>
+
+    <label class="task-item">
+
+      <input type="checkbox" class="task-checkbox">
+
+      <span>
+        Push GitHub Contribution
+      </span>
+
+    </label>
+
+  </div>
+
+  <!-- PROGRESS -->
+
+  <div class="progress-wrapper">
+
+    <div class="progress-bar">
+
+      <div class="progress-fill" id="progressFill"></div>
+
+    </div>
+
+    <span id="progressText">
+      0% Completed
+    </span>
+
+  </div>
+
+  <!-- REWARD CARD -->
+
+  <div class="reward-card" id="rewardCard">
+
+    <img
+      src="https://www.shutterstock.com/image-vector/triumphant-business-team-holding-large-260nw-2766355177.jpg"
+      alt="Reward"
+    >
+
+    <div class="reward-overlay">
+
+      <div class="reward-content">
+
+        <h3>
+          Congratulations 🎉
+        </h3>
+
+        <p>
+          You completed all your tasks today.
+        </p>
+
+        <button>
+          Claim Reward
+        </button>
+
+      </div>
+
+    </div>
+
+  </div>
+
+</section>
+
+<script>
+
+const checkboxes =
+document.querySelectorAll(".task-checkbox");
+
+const progressFill =
+document.getElementById("progressFill");
+
+const progressText =
+document.getElementById("progressText");
+
+const rewardCard =
+document.getElementById("rewardCard");
+
+function updateProgress(){
+
+  const total =
+  checkboxes.length;
+
+  const checked =
+  document.querySelectorAll(
+    ".task-checkbox:checked"
+  ).length;
+
+  const percent =
+  (checked / total) * 100;
+
+  progressFill.style.width =
+  percent + "%";
+
+  progressText.innerText =
+  Math.round(percent) +
+  "% Completed";
+
+  if(percent === 100){
+
+    rewardCard.classList.add("show-reward");
+
+  }
+
+  else{
+
+    rewardCard.classList.remove(
+      "show-reward"
+    );
+
+  }
+
+}
+
+checkboxes.forEach((checkbox)=>{
+
+  checkbox.addEventListener(
+    "change",
+    updateProgress
+  );
+
+});
+</script>
+<footer class="site-footer">
+        <p>© 2026 Student Notes App. All rights reserved.</p>
+    </footer>
   <script src="script.js"></script>
   <!-- Markdown renderer and sanitizer -->
   <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>

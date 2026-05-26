@@ -770,5 +770,330 @@ button:focus-visible{
     border-radius:6px;
     cursor:pointer;
 }
+/* =========================================================
+REWARD SECTION
+========================================================= */
 
+.reward-section{
+
+  background:white;
+
+  border-radius:30px;
+
+  padding:32px;
+
+  margin-top:40px;
+
+  border:1px solid #e5e7eb;
+
+  box-shadow:
+  0 10px 40px rgba(0,0,0,0.04);
+
+}
+
+.reward-header{
+
+  text-align:center;
+
+  margin-bottom:30px;
+
+}
+
+.reward-label{
+
+  display:inline-block;
+
+  padding:8px 14px;
+
+  background:#ede9fe;
+
+  color:#7c3aed;
+
+  border-radius:999px;
+
+  font-size:12px;
+
+  font-weight:700;
+
+  letter-spacing:1px;
+
+  margin-bottom:14px;
+
+}
+
+.reward-header h2{
+
+  font-size:32px;
+
+  color:#111827;
+
+  margin-bottom:10px;
+
+}
+
+.reward-header p{
+
+  color:#6b7280;
+
+}
+
+/* =========================================================
+TASK LIST
+========================================================= */
+
+.task-list{
+
+  display:flex;
+
+  flex-direction:column;
+
+  gap:16px;
+
+}
+
+.task-item{
+
+  display:flex;
+
+  align-items:center;
+
+  gap:14px;
+
+  padding:18px;
+
+  background:#f9fafb;
+
+  border-radius:18px;
+
+  cursor:pointer;
+
+  transition:0.3s;
+
+}
+
+.task-item:hover{
+
+  transform:translateY(-3px);
+
+  background:#f3f4f6;
+
+}
+
+.task-checkbox{
+
+  width:22px;
+  height:22px;
+
+  accent-color:#8b5cf6;
+
+}
+
+.task-item span{
+
+  color:#111827;
+
+  font-weight:500;
+
+}
+
+/* =========================================================
+PROGRESS
+========================================================= */
+
+.progress-wrapper{
+
+  margin-top:28px;
+
+  text-align:center;
+
+}
+
+.progress-bar{
+
+  width:100%;
+  height:14px;
+
+  background:#ede9fe;
+
+  border-radius:999px;
+
+  overflow:hidden;
+
+  margin-bottom:12px;
+
+}
+
+.progress-fill{
+
+  width:0%;
+
+  height:100%;
+
+  border-radius:999px;
+
+  background:
+  linear-gradient(
+    90deg,
+    #8b5cf6,
+    #3b82f6
+  );
+
+  transition:0.4s;
+
+}
+
+#progressText{
+
+  color:#6b7280;
+
+  font-weight:600;
+
+}
+
+/* =========================================================
+REWARD CARD
+========================================================= */
+
+.reward-card{
+
+  position:relative;
+
+  overflow:hidden;
+
+  border-radius:28px;
+
+  margin-top:30px;
+
+  display:none;
+
+  animation:rewardPop 0.6s ease;
+
+}
+
+.reward-card img{
+
+  width:100%;
+  height:340px;
+
+  object-fit:cover;
+
+  display:block;
+
+}
+
+.reward-overlay{
+
+  position:absolute;
+  inset:0;
+
+  background:
+  linear-gradient(
+    to top,
+    rgba(0,0,0,0.7),
+    transparent
+  );
+
+  display:flex;
+
+  align-items:flex-end;
+
+  padding:30px;
+
+}
+
+.reward-content{
+
+  color:white;
+
+}
+
+.reward-content h3{
+
+  font-size:34px;
+
+  margin-bottom:10px;
+
+}
+
+.reward-content p{
+
+  margin-bottom:20px;
+
+  color:#e5e7eb;
+
+}
+
+.reward-content button{
+
+  border:none;
+
+  background:white;
+
+  color:#111827;
+
+  padding:14px 22px;
+
+  border-radius:14px;
+
+  font-weight:700;
+
+  cursor:pointer;
+
+  transition:0.3s;
+
+}
+
+.reward-content button:hover{
+
+  transform:translateY(-4px);
+
+}
+
+.show-reward{
+
+  display:block;
+
+}
+
+/* =========================================================
+ANIMATION
+========================================================= */
+
+@keyframes rewardPop{
+
+  from{
+
+    opacity:0;
+    transform:translateY(30px);
+
+  }
+
+  to{
+
+    opacity:1;
+    transform:translateY(0);
+
+  }
+
+}
+
+/* =========================================================
+RESPONSIVE
+========================================================= */
+
+@media(max-width:768px){
+
+  .reward-header h2{
+
+    font-size:24px;
+
+  }
+
+  .reward-content h3{
+
+    font-size:26px;
+
+  }
+
+}
 
