@@ -1,23 +1,28 @@
 let notes = (JSON.parse(localStorage.getItem("notes")) || []).map(n => 
     typeof n === 'string' ? { text: n, date: "Created: " + new Date().toLocaleString() } : n
 );
+let folders = JSON.parse(localStorage.getItem("folders")) || [];
+let subjects = JSON.parse(localStorage.getItem("subjects")) || [];
 
 const THEME_KEY = "theme";
 
 displayNotes();
 initTheme();
+setupInputListeners();
+updateSidebar();
 
 function addNote() {
-    let input = document.getElementById("noteInput");
-    let titleInput = document.getElementById("noteTitle");
-    let tagsInput = document.getElementById("noteTags");
-    let subjectInput = document.getElementById("noteSubject");
+    const input = document.getElementById("noteInput");
+    const titleInput = document.getElementById("noteTitle");
+    const tagsInput = document.getElementById("noteTags");
+    const subjectInput = document.getElementById("noteSubject");
+    const folderInput = document.getElementById("noteFolder");
     
-    let noteText = input.value.trim();
-    let titleText = titleInput.value.trim();
+    const noteText = input.value.trim();
+    const titleText = titleInput.value.trim();
 
-    if(noteText === ""){
-        alert("Please enter a note");
+    if(noteText === "" && titleText === ""){
+        alert("Please enter a title or note content");
         return;
     }
 
@@ -26,6 +31,7 @@ function addNote() {
         title: titleText,
         tags: tagsInput.value,
         subject: subjectInput.value,
+        folder: folderInput.value,
         date: "Created: " + new Date().toLocaleString() 
     });
 
@@ -76,16 +82,14 @@ function displayNotes(){
 }
 
 function editNote(index){
-    let newNote = prompt("Edit your note:", notes[index].text);
+    const note = notes[index];
+    const newText = prompt("Edit your note content:", note.text);
     if(newNote !== null && newNote.trim() !== ""){
-        let trimmedNote = newNote.trim();
-        
-        if (notes.some((n, i) => n.text === trimmedNote && i !== index)) {
-            alert("A note with this text already exists!");
-            return;
-        }
-
-        notes[index] = { text: trimmedNote, date: "Edited: " + new Date().toLocaleString() };
+        notes[index] = { 
+            ...note, 
+            text: newText.trim(), 
+            date: "Edited: " + new Date().toLocaleString() 
+        };
         localStorage.setItem("notes", JSON.stringify(notes));
         displayNotes();
     }
@@ -166,4 +170,74 @@ function escapeHtml(str){
         .replaceAll('>', '>')
         .replaceAll('"', '"')
         .replaceAll("'", '&#039;');
+}
+
+function setupInputListeners() {
+    // Map input IDs to their respective actions
+    const inputs = [
+        { id: "noteTitle", action: addNote },
+        { id: "noteInput", action: addNote, isTextArea: true },
+        { id: "noteTags", action: addNote },
+        { id: "noteSubject", action: addNote },
+        { id: "newFolderName", action: addFolder },
+        { id: "newSubjectName", action: addSubject }
+    ];
+
+    inputs.forEach(inputConfig => {
+        const el = document.getElementById(inputConfig.id);
+        if (el) {
+            el.addEventListener("keydown", (e) => {
+                if (e.key === "Enter") {
+                    if (!inputConfig.isTextArea || e.ctrlKey || e.metaKey) {
+                        e.preventDefault();
+                        inputConfig.action();
+                    }
+                }
+            });
+        }
+    });
+
+    // Also attach clicks to the sidebar buttons that were missing logic
+    document.getElementById("addFolderBtn")?.addEventListener("click", addFolder);
+    document.getElementById("addSubjectBtn")?.addEventListener("click", addSubject);
+}
+
+function addFolder() {
+    const input = document.getElementById("newFolderName");
+    const name = input.value.trim();
+    if (name) {
+        folders.push(name);
+        localStorage.setItem("folders", JSON.stringify(folders));
+        input.value = "";
+        updateSidebar();
+    }
+}
+
+function addSubject() {
+    const input = document.getElementById("newSubjectName");
+    const color = document.getElementById("newSubjectColor").value;
+    const name = input.value.trim();
+    if (name) {
+        subjects.push({ name, color });
+        localStorage.setItem("subjects", JSON.stringify(subjects));
+        input.value = "";
+        updateSidebar();
+    }
+}
+
+function updateSidebar() {
+    const folderTree = document.getElementById("foldersTree");
+    const subjectList = document.getElementById("subjectsList");
+    const folderSelect = document.getElementById("noteFolder");
+
+    if (folderTree) folderTree.innerHTML = folders.map(f => `<div class="sidebar-item">📁 ${escapeHtml(f)}</div>`).join('');
+    if (subjectList) subjectList.innerHTML = subjects.map(s => `
+        <div class="sidebar-item">
+            <span class="color-dot" style="background:${s.color}; display:inline-block; width:10px; height:10px; border-radius:50%; margin-right:8px"></span>
+            ${escapeHtml(s.name)}
+        </div>`).join('');
+    
+    if (folderSelect) {
+        folderSelect.innerHTML = '<option value="">No folder</option>' + folders.map(f => `<option value="${f}">${f}</option>`).join('');
+    }
 }
