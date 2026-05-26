@@ -66,6 +66,14 @@
         <div class="input-area">
             <textarea id="noteInput" placeholder="Write your note here..."></textarea>
 
+    <div class="container">
+    <header class="site-header">
+      <h1>Student Notes App</h1>
+      <div class="page-links">
+        <a class="nav-link" href="self-test.html">Weekly Self Test →</a>
+      </div>
+    </header>
+
     <main class="main-content">
       <aside class="sidebar">
         <h3>Folders</h3>
@@ -317,25 +325,31 @@
     </div>
     <div class="view-controls" style="display: flex; justify-content: flex-end; margin-bottom: 20px;">
         <button id="toggleViewBtn" onclick="toggleView()" class="secondary-btn" style="padding: 8px 16px; border-radius: 8px; border: 1px solid #ccc; background: #fff; cursor: pointer;">Switch to Board View</button>
+    <div class="view-controls">
+      <div class="view-toggle" role="tablist" aria-label="View mode">
+        <button id="gridViewBtn" class="secondary-btn" aria-pressed="true" title="Grid view">Grid</button>
+        <button id="listViewBtn" class="secondary-btn" aria-pressed="false" title="List view">List</button>
+      </div>
+      <button id="toggleViewBtn" onclick="toggleView()" class="secondary-btn">Switch to Board View</button>
     </div>
 
     <div id="notesContainer"></div>
 
-    <div id="kanbanBoard" class="hidden" style="display: none; gap: 20px; margin-top: 20px;">
-        <div class="kanban-column" id="todo" data-status="todo" ondrop="drop(event)" ondragover="allowDrop(event)" ondragleave="dragLeave(event)">
-            <h2>To Do</h2>
-            <div class="kanban-content"></div>
-        </div>
-        <div class="kanban-column" id="doing" data-status="doing" ondrop="drop(event)" ondragover="allowDrop(event)" ondragleave="dragLeave(event)">
-            <h2>Doing</h2>
-            <div class="kanban-content"></div>
-        </div>
-        <div class="kanban-column" id="done" data-status="done" ondrop="drop(event)" ondragover="allowDrop(event)" ondragleave="dragLeave(event)">
-            <h2>Done</h2>
-            <div class="kanban-content"></div>
-        </div>
+    <div id="kanbanBoard" class="hidden">
+      <div class="kanban-column" id="todo" data-status="todo">
+        <h2>To Do</h2>
+        <div class="kanban-content"></div>
+      </div>
+      <div class="kanban-column" id="doing" data-status="doing">
+        <h2>Doing</h2>
+        <div class="kanban-content"></div>
+      </div>
+      <div class="kanban-column" id="done" data-status="done">
+        <h2>Done</h2>
+        <div class="kanban-content"></div>
+      </div>
     </div>
-  
+
     <section id="pinnedSection" class="pinned-section" aria-labelledby="pinnedHeading" style="display:none">
       <h2 id="pinnedHeading">Pinned Notes</h2>
       <div id="pinnedContainer"></div>
@@ -344,26 +358,305 @@
       <h2 id="favoritesHeading">Favorites</h2>
       <div id="favoritesContainer"></div>
     </section>
-      <!-- Minimal Recent History: shows recently opened or edited notes for quick access -->
-      <section id="recentSection" class="recent-section" aria-labelledby="recentHeading" style="display:block">
-        <h2 id="recentHeading">Recent</h2>
-        <div id="recentContainer" class="recent-container"></div>
-      </section>
-  </div>
+
+    <section id="recentSection" class="recent-section" aria-labelledby="recentHeading">
+      <h2 id="recentHeading">Recent</h2>
+      <div id="recentContainer" class="recent-container"></div>
+    </section>
+
+    <!-- Mind Map feature card -->
+    <section id="mindmapSection" class="card" aria-labelledby="mindmapHeading" style="margin-top:18px;">
+      <h2 id="mindmapHeading">Mind Map (Beta)</h2>
+      <p>Add a mind map feature to help students visually organize concepts, topics, and study material.</p>
+      <ul>
+        <li><strong>Features</strong></li>
+        <li>Create connected topic nodes</li>
+        <li>Drag-and-drop node positioning</li>
+        <li>Expand/collapse branches</li>
+        <li>Color-coded topic hierarchy</li>
+        <li>Real-time editing</li>
+        <li>Export functionality</li>
+      </ul>
+      <p><strong>Benefits</strong></p>
+      <ul>
+        <li>Improved concept visualization</li>
+        <li>Better study planning</li>
+        <li>Easier topic understanding and revision</li>
+      </ul>
+      <div style="margin-top:10px; display:flex; gap:8px;">
+        <a href="mindmap.html"><button type="button">Open Mind Map</button></a>
+        <button id="createSampleMap">Create Sample Map</button>
+      </div>
+    </section>
+    <section id="glassSection" class="card" aria-labelledby="glassHeading" style="margin-top:18px;">
+      <h2 id="glassHeading">Glassmorphism UI (Preview)</h2>
+      <p>Implement a modern glassmorphism-based user interface to improve the app's visual appearance.</p>
+      <ul>
+        <li>Frosted glass effect cards</li>
+        <li>Transparent backgrounds & blur</li>
+        <li>Smooth gradients and responsive layout</li>
+        <li>Dark/light mode compatibility</li>
+      </ul>
+      <div style="margin-top:10px; display:flex; gap:8px;">
+        <button id="toggleGlass">Toggle Glass UI</button>
+        <button id="resetTheme">Reset</button>
+      </div>
+    </section>
+    <!-- Sticky notes launcher -->
+    <div class="sticky-launch">
+      <button id="openStickyBtn" type="button" class="secondary-btn">Open Sticky Notes</button>
+      <button id="addStickyQuick" type="button" class="secondary-btn">Add Sticky</button>
+    </div>
+
+    <!-- Sticky notes board (hidden by default) -->
+    <div id="stickyBoard" class="sticky-board sticky-hidden" aria-hidden="true">
+      <div class="sticky-header">
+        <h4>Sticky Notes</h4>
+        <div class="sticky-controls">
+          <input id="stickyColor" type="color" value="#fff59d" title="Pick sticky color" />
+          <button id="closeSticky" class="secondary-btn">Close</button>
+        </div>
+      </div>
+      <div id="stickyArea" class="sticky-area" role="application" aria-label="Sticky notes area"></div>
+      <div class="sticky-footer">
+        <div style="font-size:12px;color:var(--muted-text-color)">Drag notes to position · Double-click to edit</div>
+        <div>
+          <button id="addSticky" class="secondary-btn">New</button>
+          <button id="clearStickies" class="secondary-btn">Clear</button>
+        </div>
+      </div>
+    </div>
+    <script>
+      (function(){
+        const btn = document.getElementById('toggleGlass');
+        const reset = document.getElementById('resetTheme');
+        function applyGlass(on){
+          if(on){ document.body.classList.add('glass'); localStorage.setItem('ui.glass','1'); }
+          else { document.body.classList.remove('glass'); localStorage.removeItem('ui.glass'); }
+        }
+        btn && btn.addEventListener('click', ()=> applyGlass(!document.body.classList.contains('glass')));
+        reset && reset.addEventListener('click', ()=> applyGlass(false));
+        // restore
+        if(localStorage.getItem('ui.glass')) applyGlass(true);
+      })();
+    </script>
+    <script>
+      (function(){
+        const btn = document.getElementById('createSampleMap');
+        if(!btn) return;
+        btn.addEventListener('click', ()=>{
+          const w = window.open('mindmap.html', '_blank');
+          if(!w) return alert('Popup blocked — please allow popups or open Mind Map manually.');
+          const maxAttempts = 50; let attempts = 0;
+          const iv = setInterval(()=>{
+            try{
+              if(w.createSampleMap){ w.createSampleMap(); clearInterval(iv); w.focus(); }
+            }catch(e){}
+            attempts++;
+            if(attempts>maxAttempts){ clearInterval(iv); }
+          }, 200);
+        });
+      })();
+    </script>
 
   <!-- Toast Notifications -->
   <div id="toastContainer" class="toast-container"></div>
 
   <!-- Scripts -->
     <div id="toastContainer" class="toast-container"></div>
-  <div id="toastContainer" class="toast-container"></div>
 
   <script src="script.js"></script>
 
   <!-- Markdown Renderer & Sanitizer -->
   <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/dompurify@2.4.0/dist/purify.min.js"></script>
+    <!-- Markdown renderer and sanitizer -->
+    <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/dompurify@2.4.0/dist/purify.min.js"></script>
+    <script src="script.js"></script>
+    <script>
+      // Minimal skeleton placeholders while app loads
+      (function(){
+        const container = document.getElementById('notesContainer');
+        if(!container) return;
+        // create 4 skeleton cards
+        function showSkeletons(count=4){
+          container.innerHTML = '';
+          for(let i=0;i<count;i++){
+            const card = document.createElement('div');
+            card.className = 'note skeleton-card skeleton';
+            card.innerHTML = '<div style="padding:12px"><div class="skeleton-line full"></div><div class="skeleton-line medium"></div><div class="skeleton-line short"></div></div>';
+            container.appendChild(card);
+          }
+        }
+        // show skeletons briefly while script initializes
+        showSkeletons(4);
+        // remove skeletons after a short delay; displayNotes() will populate real notes
+        window.addEventListener('load', ()=> setTimeout(()=>{ if(typeof displayNotes==='function') displayNotes(); }, 600));
+      })();
+    </script>
+    <script>
+      // Minimal sticky notes implementation (create, drag, color, persist)
+      (function(){
+        const openBtn = document.getElementById('openStickyBtn');
+        const board = document.getElementById('stickyBoard');
+        const area = document.getElementById('stickyArea');
+        const addBtn = document.getElementById('addSticky');
+        const addQuick = document.getElementById('addStickyQuick');
+        const closeBtn = document.getElementById('closeSticky');
+        const colorInput = document.getElementById('stickyColor');
+        const clearBtn = document.getElementById('clearStickies');
 
-<script src="script.js"></script>
+        if(!board || !area) return;
+
+        function load(){
+          const raw = localStorage.getItem('stickies') || '[]';
+          try{ return JSON.parse(raw); }catch(e){ return []; }
+        }
+        function save(list){ localStorage.setItem('stickies', JSON.stringify(list||[])); }
+
+        function createStickyNode(note){
+          const el = document.createElement('div');
+          el.className = 'sticky-note';
+          el.style.left = (note.x||10) + 'px';
+          el.style.top = (note.y||10) + 'px';
+          el.style.background = note.color || '#fff59d';
+          el.dataset.id = note.id;
+          el.contentEditable = true;
+          el.innerText = note.text || '';
+
+          // save text on blur
+          el.addEventListener('blur', ()=>{
+            const list = load();
+            const idx = list.findIndex(i=>i.id==note.id);
+            if(idx>-1){ list[idx].text = el.innerText; save(list); }
+          });
+
+          // drag
+          let dx=0, dy=0, dragging=false;
+          el.addEventListener('mousedown', (e)=>{
+            dragging = true; el.classList.add('dragging'); dx = e.clientX - el.offsetLeft; dy = e.clientY - el.offsetTop; e.preventDefault();
+            window.addEventListener('mousemove', move);
+            window.addEventListener('mouseup', up);
+          });
+          function move(e){ if(!dragging) return; el.style.left = (e.clientX - dx) + 'px'; el.style.top = (e.clientY - dy) + 'px'; }
+          function up(){ if(!dragging) return; dragging=false; el.classList.remove('dragging'); window.removeEventListener('mousemove', move); window.removeEventListener('mouseup', up); savePosition(note.id, el); }
+
+          area.appendChild(el);
+          return el;
+        }
+
+        function savePosition(id, el){ const list = load(); const idx = list.findIndex(i=>i.id==id); if(idx>-1){ list[idx].x = parseInt(el.style.left)||0; list[idx].y = parseInt(el.style.top)||0; save(list); } }
+
+        function render(){ area.innerHTML=''; const list = load(); list.forEach(n=> createStickyNode(n)); }
+
+        function addNew(text=''){ const list = load(); const note = { id: Date.now(), x:10, y:10, color: colorInput.value||'#fff59d', text: text }; list.push(note); save(list); const el = createStickyNode(note); el.focus(); }
+
+        openBtn && openBtn.addEventListener('click', ()=>{ board.classList.toggle('sticky-hidden'); board.style.display = board.classList.contains('sticky-hidden') ? 'none' : 'flex'; board.setAttribute('aria-hidden', board.classList.contains('sticky-hidden') ? 'true' : 'false'); render(); });
+        closeBtn && closeBtn.addEventListener('click', ()=>{ board.classList.add('sticky-hidden'); board.style.display='none'; board.setAttribute('aria-hidden','true'); });
+        addBtn && addBtn.addEventListener('click', ()=> addNew(''));
+        addQuick && addQuick.addEventListener('click', ()=>{ board.classList.remove('sticky-hidden'); board.style.display='flex'; board.setAttribute('aria-hidden','false'); addNew('Quick note'); });
+        clearBtn && clearBtn.addEventListener('click', ()=>{ if(confirm('Clear all stickies?')){ save([]); render(); } });
+
+        // color change applies to future notes
+        colorInput && colorInput.addEventListener('change', ()=>{});
+
+        // initial render if visible
+        if(!board.classList.contains('sticky-hidden')) render();
+      })();
+    </script>
+    <!-- Empty state markup and logic -->
+    <div id="emptyState" class="empty-state" style="display:none" aria-hidden="true">
+      <div class="empty-art" aria-hidden="true">
+        <!-- simple illustrative SVG -->
+        <svg width="140" height="100" viewBox="0 0 140 100" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <rect x="6" y="18" width="128" height="64" rx="8" fill="url(#g)" />
+          <rect x="18" y="28" width="36" height="8" rx="3" fill="rgba(255,255,255,0.6)" />
+          <rect x="18" y="44" width="92" height="8" rx="3" fill="rgba(255,255,255,0.45)" />
+          <rect x="18" y="60" width="64" height="8" rx="3" fill="rgba(255,255,255,0.35)" />
+          <defs>
+            <linearGradient id="g" x1="0" x2="1">
+              <stop offset="0" stop-color="#f3f4f6" />
+              <stop offset="1" stop-color="#eef2ff" />
+            </linearGradient>
+          </defs>
+        </svg>
+      </div>
+      <h3>No notes yet</h3>
+      <p>Create visually appealing empty state screens when no notes, folders, or data are available. Quick actions help users get started.</p>
+      <div class="empty-actions">
+        <button id="createFirstNote" class="btn primary">Create First Note</button>
+        <button id="importSample" class="btn">Import Sample</button>
+      </div>
+    </div>
+    <script>
+      (function(){
+        const empty = document.getElementById('emptyState');
+        const container = document.getElementById('notesContainer');
+        if(!empty || !container) return;
+        function updateEmpty(){
+          const hasNote = !!container.querySelector('.note');
+          empty.style.display = hasNote ? 'none' : 'flex';
+          empty.setAttribute('aria-hidden', hasNote ? 'true' : 'false');
+        }
+        // initial check after load
+        window.addEventListener('load', ()=> setTimeout(updateEmpty, 200));
+        // observe changes to notes container
+        const observer = new MutationObserver(updateEmpty);
+        observer.observe(container, { childList:true, subtree:true });
+
+        // Actions
+        document.getElementById('createFirstNote').addEventListener('click', ()=>{
+          if(typeof addNote === 'function') return addNote();
+          const title = prompt('Note title');
+          if(!title) return;
+          const notes = JSON.parse(localStorage.getItem('notes')||'[]');
+          notes.unshift({ id: Date.now(), title: title, content: '' });
+          localStorage.setItem('notes', JSON.stringify(notes));
+          if(typeof displayNotes === 'function') displayNotes(); else updateEmpty();
+        });
+
+        document.getElementById('importSample').addEventListener('click', ()=>{
+          const sample = [
+            { id: Date.now(), title: 'Welcome', content: 'This is a sample note to help you get started.' }
+          ];
+          localStorage.setItem('notes', JSON.stringify(sample));
+          if(typeof displayNotes === 'function') displayNotes(); else updateEmpty();
+        });
+      })();
+    </script>
+    <script>
+      // Grid/List view toggle for notes
+      (function(){
+        const gridBtn = document.getElementById('gridViewBtn');
+        const listBtn = document.getElementById('listViewBtn');
+        const container = document.getElementById('notesContainer');
+        if(!container || !gridBtn || !listBtn) return;
+        function apply(mode){
+          if(mode==='list'){
+            container.classList.remove('grid-view'); container.classList.add('list-view');
+            gridBtn.classList.remove('active'); listBtn.classList.add('active');
+            gridBtn.setAttribute('aria-pressed','false'); listBtn.setAttribute('aria-pressed','true');
+          }else{
+            container.classList.remove('list-view'); container.classList.add('grid-view');
+            listBtn.classList.remove('active'); gridBtn.classList.add('active');
+            listBtn.setAttribute('aria-pressed','false'); gridBtn.setAttribute('aria-pressed','true');
+          }
+          localStorage.setItem('view.mode', mode);
+        }
+        // restore
+        const saved = localStorage.getItem('view.mode') || 'grid';
+        apply(saved);
+        gridBtn.addEventListener('click', ()=> apply('grid'));
+        listBtn.addEventListener('click', ()=> apply('list'));
+        // ensure displayNotes re-applies layout after rendering
+        const origDisplay = window.displayNotes;
+        window.displayNotes = function(){
+          try{ if(typeof origDisplay === 'function') origDisplay.apply(this, arguments); }
+          finally{ const mode = localStorage.getItem('view.mode') || 'grid'; apply(mode); }
+        }
+      })();
+    </script>
+    </div>
 </body>
 </html>
