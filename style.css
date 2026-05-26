@@ -67,13 +67,166 @@ body{
 }
 
 .container{
+    width:100%;
+    max-width:500px;
+    background:white;
     width:500px;
     background:var(--surface-color);
+
     padding:20px;
     border-radius:10px;
     box-shadow:0px 0px 10px var(--shadow-color);
 }
 
+.page-links{
+    display:flex;
+    justify-content:flex-end;
+    margin-bottom:10px;
+}
+
+.nav-link{
+    display:inline-block;
+    text-decoration:none;
+    color:#007bff;
+    font-weight:bold;
+}
+
+.nav-link:hover{
+    text-decoration:underline;
+}
+
+.topbar{
+    display:flex;
+    justify-content:space-between;
+    align-items:center;
+    margin-bottom:10px;
+}
+
+.timer{
+    font-weight:bold;
+}
+
+.card{
+    background:#ffffcc;
+    padding:15px;
+    margin-top:15px;
+    border-radius:5px;
+}
+
+.card-title{
+    margin-bottom:10px;
+    font-size:18px;
+}
+
+.selftest-controls{
+    margin-top:10px;
+}
+
+.checkbox{
+    display:flex;
+    align-items:center;
+    gap:10px;
+    user-select:none;
+}
+
+.question-meta{
+    font-size:14px;
+    opacity:0.8;
+    margin-bottom:8px;
+}
+
+.question-text{
+    font-size:16px;
+    margin-bottom:12px;
+}
+
+.options{
+    display:flex;
+    flex-direction:column;
+    gap:10px;
+}
+
+.option{
+    display:flex;
+    align-items:center;
+    gap:10px;
+    padding:10px;
+    border:1px solid #ddd;
+    border-radius:5px;
+    background:#fff;
+    cursor:pointer;
+}
+
+.option input{
+    cursor:pointer;
+}
+
+.selftest-nav{
+    display:flex;
+    gap:10px;
+    margin-top:10px;
+}
+
+.selftest-nav button{
+    width:50%;
+}
+
+.result-main{
+    display:flex;
+    flex-direction:column;
+    gap:6px;
+}
+
+.result-score{
+    font-size:32px;
+    font-weight:bold;
+}
+
+.result-note{
+    font-size:14px;
+    opacity:0.85;
+}
+
+.stats{
+    display:flex;
+    gap:10px;
+}
+
+.stat{
+    width:33.33%;
+    background:#fff;
+    border:1px solid #ddd;
+    border-radius:5px;
+    padding:10px;
+}
+
+.stat-label{
+    font-size:13px;
+    opacity:0.8;
+    margin-bottom:6px;
+}
+
+.stat-value{
+    font-size:18px;
+    font-weight:bold;
+}
+
+@media (max-width: 600px){
+    body{
+        padding:20px;
+    }
+
+    .stats{
+        flex-direction:column;
+    }
+
+    .stat{
+        width:100%;
+    }
+}
+
+h1{
+    text-align:center;
 .app-header{
     display:flex;
     align-items:center;
