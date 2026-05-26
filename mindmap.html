@@ -1,0 +1,38 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>Mind Map — Student Notes App</title>
+  <link rel="stylesheet" href="style.css">
+  <style>
+    .mindmap-container{ height:75vh; border:1px dashed rgba(0,0,0,0.08); border-radius:8px; position:relative; background:transparent; overflow:hidden }
+    .mm-node{ position:absolute; min-width:110px; padding:10px 12px; border-radius:10px; background:linear-gradient(180deg,#fff,#f7f7ff); border:1px solid rgba(79,70,229,0.08); box-shadow:0 6px 18px rgba(59,130,246,0.06); cursor:grab }
+    .mm-node.dragging{ opacity:0.7; cursor:grabbing }
+    .mm-toolbar{ display:flex; gap:8px; align-items:center; margin-bottom:12px }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <header class="site-header">
+      <h1>Mind Map</h1>
+      <div class="page-links"><a class="nav-link" href="index.html">← Back</a></div>
+    </header>
+
+    <main>
+      <div class="mm-toolbar">
+        <input id="nodeText" placeholder="Node text" style="padding:8px 10px; border-radius:8px; border:1px solid #ddd; flex:1">
+        <button id="addNodeBtn">Add Node</button>
+        <button id="clearNodes">Clear</button>
+        <button id="exportMap">Export JSON</button>
+      </div>
+
+      <div id="mindmap" class="mindmap-container" aria-label="Mind map canvas"></div>
+
+      <pre id="exportArea" style="margin-top:12px; display:none; white-space:pre-wrap; background:#f8f9fb; padding:10px; border-radius:6px"></pre>
+    </main>
+  </div>
+
+  <script src="mindmap.js"></script>
+</body>
+</html>
