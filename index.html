@@ -119,6 +119,10 @@
     </main>
 
     <div class="view-controls">
+      <div class="view-toggle" role="tablist" aria-label="View mode">
+        <button id="gridViewBtn" class="secondary-btn" aria-pressed="true" title="Grid view">Grid</button>
+        <button id="listViewBtn" class="secondary-btn" aria-pressed="false" title="List view">List</button>
+      </div>
       <button id="toggleViewBtn" onclick="toggleView()" class="secondary-btn">Switch to Board View</button>
     </div>
 
@@ -309,6 +313,38 @@
           localStorage.setItem('notes', JSON.stringify(sample));
           if(typeof displayNotes === 'function') displayNotes(); else updateEmpty();
         });
+      })();
+    </script>
+    <script>
+      // Grid/List view toggle for notes
+      (function(){
+        const gridBtn = document.getElementById('gridViewBtn');
+        const listBtn = document.getElementById('listViewBtn');
+        const container = document.getElementById('notesContainer');
+        if(!container || !gridBtn || !listBtn) return;
+        function apply(mode){
+          if(mode==='list'){
+            container.classList.remove('grid-view'); container.classList.add('list-view');
+            gridBtn.classList.remove('active'); listBtn.classList.add('active');
+            gridBtn.setAttribute('aria-pressed','false'); listBtn.setAttribute('aria-pressed','true');
+          }else{
+            container.classList.remove('list-view'); container.classList.add('grid-view');
+            listBtn.classList.remove('active'); gridBtn.classList.add('active');
+            listBtn.setAttribute('aria-pressed','false'); gridBtn.setAttribute('aria-pressed','true');
+          }
+          localStorage.setItem('view.mode', mode);
+        }
+        // restore
+        const saved = localStorage.getItem('view.mode') || 'grid';
+        apply(saved);
+        gridBtn.addEventListener('click', ()=> apply('grid'));
+        listBtn.addEventListener('click', ()=> apply('list'));
+        // ensure displayNotes re-applies layout after rendering
+        const origDisplay = window.displayNotes;
+        window.displayNotes = function(){
+          try{ if(typeof origDisplay === 'function') origDisplay.apply(this, arguments); }
+          finally{ const mode = localStorage.getItem('view.mode') || 'grid'; apply(mode); }
+        }
       })();
     </script>
     </div>

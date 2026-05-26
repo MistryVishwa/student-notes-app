@@ -1144,6 +1144,24 @@ button{ padding: 10px 14px; border-radius: 10px; }
 /* Notes grid spacing */
 #notesContainer{ margin-top: 0; }
 
+/* View controls (grid / list) */
+.view-toggle{ display:flex; gap:8px; align-items:center; margin-right:12px }
+.view-toggle .secondary-btn{ padding:8px 10px; border-radius:8px; font-size:0.95rem }
+.view-toggle .secondary-btn.active{ background: linear-gradient(90deg,var(--accent-1),var(--accent-2)); color:white; box-shadow: 0 6px 18px rgba(59,130,246,0.12) }
+
+/* Grid view: responsive cards */
+#notesContainer.grid-view{ display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap:20px; }
+
+/* List view: stacked full-width items */
+#notesContainer.list-view{ display: block; }
+#notesContainer.list-view .note{ margin-bottom:14px; display:flex; gap:12px; align-items:flex-start }
+#notesContainer.list-view .note .note-content{ flex:1 }
+#notesContainer.list-view .note .note-meta{ min-width:160px; text-align:right; color:var(--muted-text-color); font-size:0.9rem }
+
+/* Card hover and micro-interactions are already defined; ensure smooth resize */
+.note{ transition: transform 0.18s ease, box-shadow 0.18s ease, background 0.18s ease }
+
+
 /* Kanban tweaks */
 .kanban-column{ min-height: 300px; }
 
