@@ -547,6 +547,20 @@ button:focus-visible{
 .folder-actions button{ margin-left:6px; padding:4px 6px; font-size:12px }
 
 
+/* Subjects */
+.subject-chip{
+    display:inline-block;
+    padding:4px 8px;
+    border-radius:999px;
+    font-size:12px;
+    color:#111;
+    margin-right:6px;
+}
+.subject-item{ display:flex; align-items:center; justify-content:space-between; padding:6px 4px; border-radius:6px }
+.subject-list{ list-style:none; padding-left:0; margin:6px 0 }
+.subject-list .subject-row{ display:flex; align-items:center; gap:8px }
+
+
 /* Recent history panel (minimal) */
 .recent-section{ margin-top:16px }
 .recent-section h2{ margin:0 0 8px 0; font-size:16px }

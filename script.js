@@ -73,6 +73,8 @@ let globalTags = [];
 // Folder model: simple parent-relation tree
 let folders = JSON.parse(localStorage.getItem('folders')) || [];
 let currentFolder = null; // currently selected folder id (string)
+// Subjects mapping: name -> color (hex)
+let subjects = JSON.parse(localStorage.getItem('subjects')) || {};
 
 const TAGS_KEY = 'allTags';
 
@@ -208,6 +210,13 @@ function addNote() {
     // update global tags list and suggestions
     addGlobalTags(newNote.tags);
     renderSuggestedTags();
+
+    // ensure subject exists in subjects map (use default color if missing)
+    if(newNote.subject && !subjects[newNote.subject]){
+        subjects[newNote.subject] = '#ffd966';
+        try{ localStorage.setItem('subjects', JSON.stringify(subjects)); }catch(e){}
+        try{ renderSubjects(); }catch(e){}
+    }
 }
 
 function displayNotes(){
@@ -297,6 +306,8 @@ function displayNotes(){
         if(q) highlightInElement(tmp, q);
         const contentHtml = `<div class="note-content">${tmp.innerHTML}</div>`;
         const subjectHtml = note.subject ? `<div class="note-subject">Subject: ${escapeHtml(note.subject)}</div>` : '';
+            const subjectColor = (note.subject && subjects[note.subject]) ? sanitizeColor(subjects[note.subject]) : '';
+            const subjectHtml = note.subject ? `<div class="note-subject"><span class="subject-chip" style="background:${subjectColor};">${escapeHtml(note.subject)}</span></div>` : '';
         const tagsHtml = (note.tags || []).length ? `<div class="note-tags">${note.tags.map(t=>`<button type="button" class="tag" onclick="applyTagFilter(${JSON.stringify(t)})">${escapeHtml(t)}</button>`).join('')}</div>` : '';
 
         // Favorite & Pin buttons
@@ -535,6 +546,8 @@ function refreshFilters(){
     // populate folder select for note creation and ensure folders are rendered
     populateFolderSelect();
     renderFolders();
+    // render subjects panel and ensure subject list affects filter
+    renderSubjects();
 }
 
 // Search and filter input wiring
@@ -594,6 +607,20 @@ document.addEventListener('DOMContentLoaded', () => {
             renderSuggestedTags();
         });
         newTagInput.addEventListener('keydown', (e)=>{ if(e.key === 'Enter'){ e.preventDefault(); addTagBtn.click(); } });
+    }
+    // Wire subject add
+    const newSubjectInput = document.getElementById('newSubjectName');
+    const newSubjectColor = document.getElementById('newSubjectColor');
+    const addSubjectBtn = document.getElementById('addSubjectBtn');
+    if(addSubjectBtn && newSubjectInput){
+        addSubjectBtn.addEventListener('click', ()=>{
+            const n = (newSubjectInput.value||'').trim();
+            const c = newSubjectColor ? newSubjectColor.value : '#ffd966';
+            if(!n) return;
+            addSubject(n, c);
+            newSubjectInput.value = '';
+        });
+        newSubjectInput.addEventListener('keydown', (e)=>{ if(e.key === 'Enter'){ e.preventDefault(); addSubjectBtn.click(); } });
     }
     // Wire folder add button
     const newFolderInput = document.getElementById('newFolderName');
@@ -788,6 +815,60 @@ function populateFolderSelect(){
     };
     const opts = ['<option value="">No folder</option>'].concat(buildOptions(''));
     sel.innerHTML = opts.join('');
+}
+
+// ---------------------
+// Subjects (minimal)
+// ---------------------
+function saveSubjects(){
+    try{ localStorage.setItem('subjects', JSON.stringify(subjects)); }catch(e){}
+}
+
+function sanitizeColor(c){
+    if(!c) return '';
+    const s = String(c).trim();
+    const hex = s.replace('#','');
+    if(/^[0-9a-fA-F]{3}$/.test(hex)) return '#'+hex;
+    if(/^[0-9a-fA-F]{6}$/.test(hex)) return '#'+hex;
+    return '';
+}
+
+function addSubject(name, color){
+    if(!name) return;
+    const n = String(name).trim();
+    const col = sanitizeColor(color) || '#ffd966';
+    subjects[n] = col;
+    saveSubjects();
+    renderSubjects();
+    populateFilterSubject();
+}
+
+function renderSubjects(){
+    const container = document.getElementById('subjectsList');
+    if(!container) return;
+    const keys = Object.keys(subjects || {});
+    if(!keys.length){ container.innerHTML = '<div class="muted">No subjects</div>'; return; }
+    container.innerHTML = keys.map(k=>{
+        const col = sanitizeColor(subjects[k]) || '#eee';
+        return `<div class="subject-item"><div class="subject-row"><span class="subject-chip" style="background:${col};">${escapeHtml(k)}</span></div><div><button onclick="applySubjectFilter('${escapeHtml(k)}')">Filter</button></div></div>`;
+    }).join('');
+}
+
+function applySubjectFilter(name){
+    filterSubject = name || '';
+    const select = document.getElementById('filterSubject');
+    if(select) select.value = name || '';
+    displayNotes();
+}
+
+function populateFilterSubject(){
+    const select = document.getElementById('filterSubject');
+    if(!select) return;
+    const subjectsFromNotes = Array.from(new Set(notes.map(n=> (n.subject||'').trim()).filter(Boolean)));
+    const known = Array.from(new Set([].concat(Object.keys(subjects||{}), subjectsFromNotes))).filter(Boolean);
+    const current = select.value;
+    select.innerHTML = '<option value="">All subjects</option>' + known.map(s=>`<option value="${escapeHtml(s)}">${escapeHtml(s)}</option>`).join('');
+    select.value = current || '';
 }
 function recordRecent(note){
     if(!note) return;
