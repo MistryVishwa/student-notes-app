@@ -1041,6 +1041,14 @@ button:focus, input:focus, textarea:focus, select:focus{ box-shadow: 0 0 0 4px r
 .assignment-overdue{ color:#b91c1c; font-weight:700 }
 .assignment-due{ font-weight:600 }
 
+/* Subject groups */
+.groups-section{ margin-top:10px; padding-top:8px; border-top:1px dashed rgba(0,0,0,0.04) }
+.group-list{ display:flex; flex-direction:column; gap:8px; margin-top:8px }
+.group-item{ display:flex; justify-content:space-between; align-items:center; gap:8px; padding:8px; border-radius:8px; background: color-mix(in srgb, var(--surface-color) 96%, transparent); border:1px solid rgba(0,0,0,0.03) }
+.group-item .meta{ font-size:12px; color:var(--muted-text-color) }
+.group-controls{ display:flex; gap:6px; }
+.group-select{ width:100%; padding:6px 8px; border-radius:6px; border:1px solid var(--border-color); }
+
 
 
 /* Recent history panel (minimal) */
@@ -1076,7 +1084,7 @@ button:focus, input:focus, textarea:focus, select:focus{ box-shadow: 0 0 0 4px r
 /* Make the top-level container a two-column layout: sidebar + main */
 .container {
     display: grid;
-    grid-template-columns: 320px 1fr;
+    grid-template-columns: auto 1fr; /* sidebar width managed by .sidebar */
     gap: 28px;
     align-items: start;
     max-width: 1100px;
@@ -1100,6 +1108,8 @@ button:focus, input:focus, textarea:focus, select:focus{ box-shadow: 0 0 0 4px r
     border: 1px solid var(--border-color);
     max-height: calc(100vh - 160px);
     overflow: auto;
+    width: 320px; /* explicit width so collapsing can animate */
+    transition: width 240ms ease, padding 180ms ease;
 }
 
 /* Main column */
@@ -1177,6 +1187,25 @@ h3{ margin-top: 0; }
     .main-content{ order: 1 }
 }
 
+/* Collapsible sidebar */
+body.sidebar-collapsed .container{ /* sidebar width visually reduced */ }
+body.sidebar-collapsed .sidebar{ width:72px; padding:8px !important; overflow:visible }
+body.sidebar-collapsed .sidebar > *:not(.sidebar-mini){ display:none !important }
+body.sidebar-collapsed .sidebar-mini{ display:flex; align-items:center; justify-content:center; height:100%; font-size:18px; color:var(--accent-1); flex-direction:column; gap:10px }
+
+/* Mini-nav buttons inside collapsed sidebar */
+.sidebar-mini .mini-btn{ width:44px; height:44px; display:flex; align-items:center; justify-content:center; border-radius:8px; background:transparent; border:1px solid rgba(0,0,0,0.04); cursor:pointer; color:var(--accent-1); }
+.sidebar-mini .mini-btn:hover{ background: rgba(79,70,229,0.06) }
+.sidebar-mini .mini-btn:active{ transform:translateY(1px) }
+.sidebar-mini .mini-label{ font-size:11px; color:var(--muted-text-color); margin-top:6px }
+/* ensure header toggle is visible */
+.theme-toggle{ z-index:1300 }
+
+@media (max-width:900px){
+    /* on small screens collapse by default (user can expand) */
+    body.sidebar-collapsed .container{ grid-template-columns: 0 1fr !important }
+}
+
 /* Small improvements for accessibility */
 button:focus, input:focus, select:focus, textarea:focus{ outline: 3px solid color-mix(in srgb, var(--primary) 20%, transparent); outline-offset: 2px }
 
@@ -1233,6 +1262,47 @@ input:focus, select:focus, textarea:focus{
 @media (max-width:700px){
     .sticky-board{ right:10px; left:10px; width:auto; bottom:12px; height:360px }
 }
+
+/* Editor toolbar (minimal Markdown helpers) */
+.editor-toolbar{ display:flex; gap:8px; flex-wrap:wrap; align-items:center; margin-bottom:8px }
+.editor-toolbar .btn{ background:transparent; border:1px solid rgba(0,0,0,0.06); padding:6px 8px; border-radius:8px; cursor:pointer; font-size:0.95rem }
+.editor-toolbar .btn:hover{ background: rgba(0,0,0,0.03) }
+.editor-toolbar .btn.icon{ width:36px; height:36px; display:flex; align-items:center; justify-content:center }
+.editor-toolbar .divider{ width:1px; height:28px; background:rgba(0,0,0,0.04); margin:0 6px }
+
+.editor-toolbar .btn.active{ background: linear-gradient(90deg,var(--accent-1),var(--accent-2)); color:white; border-color:transparent }
+
+/* Dashboard */
+.dashboard{ margin-bottom:18px; display:flex; flex-direction:column; gap:14px }
+.dashboard-grid{ display:grid; grid-template-columns: repeat(4,1fr); gap:12px }
+.stat-card{ background: linear-gradient(180deg, rgba(255,255,255,0.9), rgba(250,250,255,0.7)); border-radius:12px; padding:14px; box-shadow: var(--shadow-sm); display:flex; flex-direction:column; gap:6px }
+.stat-card .label{ font-size:0.85rem; color:var(--muted-text-color) }
+.stat-card .value{ font-size:1.25rem; font-weight:700; color:var(--accent-1) }
+.dashboard-list{ display:flex; gap:12px }
+.recent-notes{ flex:1; background:var(--card-surface); padding:12px; border-radius:10px; min-height:120px }
+.recent-notes h4{ margin:0 0 8px 0 }
+.recent-note-item{ padding:8px; border-radius:8px; border:1px solid rgba(0,0,0,0.04); margin-bottom:8px; background:linear-gradient(180deg, #fff, #fbfdff) }
+.dashboard-widgets{ width:320px; display:flex; flex-direction:column; gap:12px }
+
+@media (max-width:1000px){
+    .dashboard-grid{ grid-template-columns: repeat(2,1fr); }
+    .dashboard-widgets{ width:100%; }
+}
+@media (max-width:600px){
+    .dashboard-grid{ grid-template-columns: 1fr; }
+    .dashboard{ gap:10px }
+}
+
+/* Breadcrumb */
+.breadcrumb{ display:flex; align-items:center; gap:8px; padding:8px 12px; border-radius:8px; background: color-mix(in srgb, var(--surface-color) 92%, transparent); border:1px solid rgba(0,0,0,0.03); margin:12px 0 }
+.breadcrumb .crumb{ color:var(--muted-text-color); text-decoration:none; font-size:0.95rem }
+.breadcrumb .crumb:hover{ text-decoration:underline; color:var(--accent-1) }
+.breadcrumb .crumb-sep{ color:rgba(0,0,0,0.25); margin:0 6px }
+
+@media (max-width:700px){
+    .breadcrumb{ font-size:0.95rem; padding:8px; }
+}
+
 
 /* Make the primary Add Note button more obvious */
 button[onclick="addNote()"]{

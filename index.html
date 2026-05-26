@@ -13,14 +13,61 @@
     <div class="container">
     <header class="site-header">
       <h1>Student Notes App</h1>
-      <div class="page-links">
+      <div style="display:flex; gap:8px; align-items:center">
+        <button id="toggleSidebarBtn" class="theme-toggle" aria-expanded="true" title="Toggle sidebar">☰</button>
+        <div class="page-links">
         <a class="nav-link" href="self-test.html">Weekly Self Test →</a>
+      </div>
       </div>
     </header>
 
     <main class="main-content">
+      <!-- Dashboard overview -->
+      <section id="dashboard" class="dashboard">
+        <div class="dashboard-grid" role="region" aria-label="Dashboard stats">
+          <div class="stat-card">
+            <div class="label">Total Notes</div>
+            <div id="statTotalNotes" class="value">0</div>
+          </div>
+          <div class="stat-card">
+            <div class="label">Pinned</div>
+            <div id="statPinned" class="value">0</div>
+          </div>
+          <div class="stat-card">
+            <div class="label">Due Soon</div>
+            <div id="statDueSoon" class="value">0</div>
+          </div>
+          <div class="stat-card">
+            <div class="label">Recent Activity</div>
+            <div id="statRecentCount" class="value">0</div>
+          </div>
+        </div>
+        <div class="dashboard-list">
+          <div class="recent-notes">
+            <h4>Recent Notes</h4>
+            <div id="recentNotesList"></div>
+          </div>
+          <div class="dashboard-widgets">
+            <div class="stat-card">
+              <div class="label">Attendance (summary)</div>
+              <div id="statAttendance" class="value">—</div>
+            </div>
+            <div class="stat-card">
+              <div class="label">Upcoming Deadlines</div>
+              <div id="statDeadlines" class="value">—</div>
+            </div>
+          </div>
+        </div>
+      </section>
       <aside class="sidebar">
+        <div class="sidebar-mini" aria-hidden="true">
+          <button class="mini-btn" id="miniHome" title="Home" aria-label="Home">🏠</button>
+          <button class="mini-btn" id="miniFolders" title="Folders" aria-label="Folders">📁</button>
+          <button class="mini-btn" id="miniSearch" title="Search" aria-label="Search">🔍</button>
+          <button class="mini-btn" id="miniStickies" title="Stickies" aria-label="Stickies">🗒️</button>
+        </div>
         <h3>Folders</h3>
+        <nav id="breadcrumb" class="breadcrumb" aria-label="Breadcrumb" style="display:none"></nav>
         <div id="foldersTree"></div>
         <div style="margin-top:10px; display:flex; gap:8px">
           <input id="newFolderName" placeholder="New folder name" style="flex:1; padding:6px" />
@@ -33,6 +80,20 @@
           <input id="newSubjectName" placeholder="New subject" style="flex:1; padding:6px" />
           <input id="newSubjectColor" type="color" value="#ffd966" title="Pick color" />
           <button id="addSubjectBtn" type="button">Add</button>
+        </div>
+        <!-- Subject Groups -->
+        <div class="groups-section" aria-labelledby="groupsHeading">
+          <h4 id="groupsHeading" style="margin:10px 0 6px 0">Subject Groups</h4>
+          <div style="display:flex; gap:8px; align-items:center">
+            <input id="newGroupName" placeholder="New group" style="flex:1; padding:6px" />
+            <button id="addGroupBtn" type="button">Add</button>
+          </div>
+          <div style="margin-top:8px">
+            <select id="assignSubjectSelect" class="group-select">
+              <option value="">Select subject to assign</option>
+            </select>
+          </div>
+          <div id="groupsList" class="group-list"></div>
         </div>
         <hr style="margin:12px 0" />
         <h3>Attendance</h3>
@@ -67,6 +128,22 @@
       </aside>
       <div class="input-area">
         <input id="noteTitle" placeholder="Title (optional)" />
+        <!-- Editor toolbar (bold, italic, heading, list, code, link) -->
+        <div class="editor-toolbar" role="toolbar" aria-label="Formatting toolbar">
+          <button type="button" class="btn" data-action="bold" title="Bold (Ctrl+B)"><strong>B</strong></button>
+          <button type="button" class="btn" data-action="italic" title="Italic (Ctrl+I)"><em>I</em></button>
+          <button type="button" class="btn" data-action="underline" title="Underline"><span style="text-decoration:underline">U</span></button>
+          <div class="divider" aria-hidden="true"></div>
+          <button type="button" class="btn" data-action="h1" title="Heading 1">H1</button>
+          <button type="button" class="btn" data-action="h2" title="Heading 2">H2</button>
+          <div class="divider" aria-hidden="true"></div>
+          <button type="button" class="btn" data-action="ul" title="Bullet list">• List</button>
+          <button type="button" class="btn" data-action="ol" title="Numbered list">1. List</button>
+          <button type="button" class="btn" data-action="code" title="Code block">{ }</button>
+          <div class="divider" aria-hidden="true"></div>
+          <button type="button" class="btn" data-action="link" title="Insert link">Link</button>
+          <button type="button" class="btn" data-action="quote" title="Blockquote">“”</button>
+        </div>
         <textarea id="noteInput" placeholder="Write your note here... (Markdown supported)"></textarea>
         <div class="input-row">
           <input id="noteTags" placeholder="Tags (comma separated)" />
@@ -259,6 +336,65 @@
     <script src="https://cdn.jsdelivr.net/npm/dompurify@2.4.0/dist/purify.min.js"></script>
     <script src="script.js"></script>
     <script>
+      // Formatting toolbar functionality (minimal, Markdown-based)
+      (function(){
+        const ta = document.getElementById('noteInput');
+        const toolbar = document.querySelector('.editor-toolbar');
+        const previewToggle = document.getElementById('livePreviewToggle');
+        const previewEl = document.getElementById('livePreview');
+        if(!ta || !toolbar) return;
+
+        function wrapSelection(before, after, placeholder){
+          const start = ta.selectionStart, end = ta.selectionEnd;
+          const sel = ta.value.substring(start, end) || placeholder || '';
+          const newVal = ta.value.substring(0,start) + before + sel + after + ta.value.substring(end);
+          ta.value = newVal;
+          // restore selection around inserted content
+          const cursor = start + before.length + sel.length + after.length;
+          ta.focus(); ta.selectionStart = ta.selectionEnd = cursor;
+          updatePreviewIfNeeded();
+        }
+
+        function toggleLinePrefix(prefix){
+          const start = ta.selectionStart, end = ta.selectionEnd;
+          const before = ta.value.substring(0,start);
+          const sel = ta.value.substring(start,end);
+          const lines = sel.split(/\n/).map(l=> l.startsWith(prefix) ? l.replace(prefix,'') : prefix + l);
+          const newVal = before + lines.join('\n') + ta.value.substring(end);
+          ta.value = newVal; ta.focus(); updatePreviewIfNeeded();
+        }
+
+        toolbar.addEventListener('click', (e)=>{
+          const btn = e.target.closest('button[data-action]');
+          if(!btn) return;
+          const action = btn.dataset.action;
+          if(action==='bold') wrapSelection('**','**','bold text');
+          else if(action==='italic') wrapSelection('*','*','italic');
+          else if(action==='underline') wrapSelection('<u>','</u>','underlined');
+          else if(action==='h1') toggleLinePrefix('# ');
+          else if(action==='h2') toggleLinePrefix('## ');
+          else if(action==='ul') toggleLinePrefix('- ');
+          else if(action==='ol') toggleLinePrefix('1. ');
+          else if(action==='code') wrapSelection('\n```\n','\n```\n','code');
+          else if(action==='link'){
+            const url = prompt('Enter URL'); if(!url) return; const start = ta.selectionStart, end = ta.selectionEnd; const txt = ta.value.substring(start,end) || 'link text'; wrapSelection('[','('+url+')', txt);
+          }
+          else if(action==='quote') toggleLinePrefix('> ');
+        });
+
+        function updatePreviewIfNeeded(){
+          if(previewToggle && previewToggle.checked && previewEl){
+            try{ previewEl.innerHTML = DOMPurify.sanitize(marked.parse(ta.value||'')); previewEl.style.display='block'; previewEl.setAttribute('aria-hidden','false'); }
+            catch(e){}
+          }
+        }
+
+        // update preview live if toggled on
+        ta.addEventListener('input', ()=> updatePreviewIfNeeded());
+        if(previewToggle) previewToggle.addEventListener('change', ()=> updatePreviewIfNeeded());
+      })();
+    </script>
+    <script>
       // Minimal skeleton placeholders while app loads
       (function(){
         const container = document.getElementById('notesContainer');
@@ -347,6 +483,300 @@
 
         // initial render if visible
         if(!board.classList.contains('sticky-hidden')) render();
+      })();
+    </script>
+    <script>
+      // Minimal drag-and-drop support for notes and folders
+      (function(){
+        function getDragAfterElement(container, y){
+          const draggableElements = [...container.querySelectorAll('.note:not(.dragging)')];
+          let closest = {offset: Number.NEGATIVE_INFINITY, element: null};
+          draggableElements.forEach(child=>{
+            const box = child.getBoundingClientRect();
+            const offset = y - box.top - box.height/2;
+            if(offset < 0 && offset > closest.offset){ closest = { offset, element: child }; }
+          });
+          return closest.element;
+        }
+
+        function enableNoteDrag(){
+          const container = document.getElementById('notesContainer');
+          if(!container) return;
+          container.querySelectorAll('.note').forEach(n=>{
+            n.setAttribute('draggable','true');
+            n.addEventListener('dragstart', e=>{
+              e.dataTransfer.setData('text/note-id', n.dataset.id || n.getAttribute('data-id') || '');
+              n.classList.add('dragging');
+              e.dataTransfer.effectAllowed = 'move';
+            });
+            n.addEventListener('dragend', ()=> n.classList.remove('dragging'));
+          });
+
+          container.addEventListener('dragover', e=>{
+            e.preventDefault();
+            const dragging = container.querySelector('.note.dragging');
+            if(!dragging) return;
+            const after = getDragAfterElement(container, e.clientY);
+            if(after == null) container.appendChild(dragging);
+            else container.insertBefore(dragging, after);
+          });
+
+          container.addEventListener('drop', e=>{
+            e.preventDefault();
+            // Save new order to localStorage if notes stored there
+            try{
+              const ids = [...container.querySelectorAll('.note')].map(el=> el.dataset.id || el.getAttribute('data-id'));
+              const notes = JSON.parse(localStorage.getItem('notes')||'[]');
+              if(Array.isArray(notes) && notes.length>0){
+                const map = new Map(notes.map(n=>[String(n.id), n]));
+                const reordered = ids.map(id=> map.get(String(id))).filter(Boolean);
+                if(reordered.length) localStorage.setItem('notes', JSON.stringify(reordered));
+              }
+            }catch(e){}
+          });
+        }
+
+        function enableFolderDrag(){
+          const tree = document.getElementById('foldersTree');
+          if(!tree) return;
+          tree.querySelectorAll('.folder-item').forEach(item=>{
+            item.setAttribute('draggable','true');
+            item.addEventListener('dragstart', e=>{ e.dataTransfer.setData('text/folder-id', item.dataset.id||''); item.classList.add('dragging'); });
+            item.addEventListener('dragend', ()=> item.classList.remove('dragging'));
+          });
+          tree.addEventListener('dragover', e=>{ e.preventDefault(); const dragging = tree.querySelector('.folder-item.dragging'); if(!dragging) return; const after = getDragAfterElement(tree, e.clientY); if(after==null) tree.appendChild(dragging); else tree.insertBefore(dragging, after); });
+          tree.addEventListener('drop', e=>{ e.preventDefault(); /* optionally persist folder order */ });
+        }
+
+        // allow dropping into kanban columns
+        document.querySelectorAll('.kanban-content').forEach(col=>{
+          col.addEventListener('dragover', e=>{ e.preventDefault(); e.dataTransfer.dropEffect = 'move'; });
+          col.addEventListener('drop', e=>{
+            e.preventDefault();
+            const noteId = e.dataTransfer.getData('text/note-id');
+            const dragging = document.querySelector('.note.dragging');
+            if(dragging){ col.appendChild(dragging); dragging.classList.remove('dragging'); }
+            // update status in storage if notes model supports it
+            try{
+              const status = col.closest('.kanban-column')?.dataset?.status || '';
+              const notes = JSON.parse(localStorage.getItem('notes')||'[]');
+              const idx = notes.findIndex(n=> String(n.id) === String(noteId));
+              if(idx>-1){ notes[idx].status = status; localStorage.setItem('notes', JSON.stringify(notes)); }
+            }catch(e){}
+          });
+        });
+
+        // ensure drag handlers are attached after notes are rendered
+        const prevDisplay = window.displayNotes;
+        window.displayNotes = function(){
+          try{ if(typeof prevDisplay === 'function') prevDisplay.apply(this, arguments); }
+          finally{ setTimeout(()=>{ enableNoteDrag(); enableFolderDrag(); }, 50); }
+        }
+
+        // initialize on load
+        window.addEventListener('load', ()=>{ setTimeout(()=>{ enableNoteDrag(); enableFolderDrag(); }, 120); });
+      })();
+    </script>
+    <script>
+      // Minimal breadcrumb navigation for folder tree
+      (function(){
+        const bc = document.getElementById('breadcrumb');
+        const tree = document.getElementById('foldersTree');
+        if(!bc || !tree) return;
+
+        function buildPathFromElement(el){
+          const parts = [];
+          let cur = el;
+          while(cur && cur !== tree && cur !== document.body){
+            if(cur.classList && cur.classList.contains('folder-item')){
+              const name = (cur.querySelector('.name') && cur.querySelector('.name').textContent.trim()) || cur.dataset.name || cur.textContent.trim();
+              const id = cur.dataset.id || cur.getAttribute('data-id') || '';
+              parts.unshift({ name, id, el: cur });
+            }
+            cur = cur.parentElement;
+          }
+          return parts;
+        }
+
+        function renderCrumbs(parts){
+          bc.innerHTML = '';
+          // home crumb
+          const home = document.createElement('a'); home.href = '#'; home.className = 'crumb'; home.textContent = 'Home';
+          home.addEventListener('click', (ev)=>{ ev.preventDefault(); // clear selection and show root notes
+            tree.querySelectorAll('.folder-item.selected').forEach(n=>n.classList.remove('selected'));
+            if(typeof displayNotes === 'function') displayNotes();
+            bc.style.display = 'none';
+            localStorage.removeItem('current.folder');
+          });
+          bc.appendChild(home);
+
+          parts.forEach((p)=>{
+            const sep = document.createElement('span'); sep.className = 'crumb-sep'; sep.textContent = '›'; bc.appendChild(sep);
+            const a = document.createElement('a'); a.href = '#'; a.className = 'crumb'; a.textContent = p.name || 'Folder';
+            a.addEventListener('click', (ev)=>{ ev.preventDefault(); if(p.el) p.el.click(); else if(p.id){ const t = tree.querySelector(`[data-id="${p.id}"]`); if(t) t.click(); } });
+            bc.appendChild(a);
+          });
+          bc.style.display = parts.length ? 'flex' : 'none';
+          // persist last selected folder id
+          if(parts.length){ const last = parts[parts.length-1]; if(last && last.id) localStorage.setItem('current.folder', String(last.id)); }
+        }
+
+        tree.addEventListener('click', (e)=>{
+          const fi = e.target.closest('.folder-item');
+          if(fi){
+            tree.querySelectorAll('.folder-item.selected').forEach(n=>n.classList.remove('selected'));
+            fi.classList.add('selected');
+            const parts = buildPathFromElement(fi);
+            renderCrumbs(parts);
+          }
+        });
+
+        // Observe changes to tree and update breadcrumb if selection remains
+        const mo = new MutationObserver(()=>{ const sel = tree.querySelector('.folder-item.selected'); if(sel) renderCrumbs(buildPathFromElement(sel)); });
+        mo.observe(tree, { childList:true, subtree:true });
+
+        // initial state: try to restore from localStorage, else from DOM selection
+        const savedId = localStorage.getItem('current.folder');
+        if(savedId){ const target = tree.querySelector(`[data-id="${savedId}"]`); if(target){ target.click(); renderCrumbs(buildPathFromElement(target)); } }
+        const sel = tree.querySelector('.folder-item.selected'); if(!savedId && sel) renderCrumbs(buildPathFromElement(sel));
+      })();
+    </script>
+    <script>
+      // Minimal dashboard renderer: reads localStorage and populates stats
+      (function(){
+        function withinDays(dateStr, days){
+          if(!dateStr) return false;
+          const d = new Date(dateStr); if(isNaN(d)) return false;
+          const now = new Date(); const diff = (d - now) / (1000*60*60*24);
+          return diff >=0 && diff <= days;
+        }
+
+        function renderDashboard(){
+          try{
+            const notes = JSON.parse(localStorage.getItem('notes')||'[]');
+            const assignments = JSON.parse(localStorage.getItem('assignments')||'[]');
+            const attendance = JSON.parse(localStorage.getItem('attendance')||'[]');
+
+            const totalNotes = Array.isArray(notes) ? notes.length : 0;
+            const pinned = Array.isArray(notes) ? notes.filter(n=>n.pinned).length : 0;
+            const dueSoon = Array.isArray(assignments) ? assignments.filter(a=> withinDays(a.due, 7)).length : 0;
+            const recentCount = Array.isArray(notes) ? notes.slice().sort((a,b)=> (b.id||0)-(a.id||0)).slice(0,5).length : 0;
+
+            document.getElementById('statTotalNotes').textContent = totalNotes;
+            document.getElementById('statPinned').textContent = pinned;
+            document.getElementById('statDueSoon').textContent = dueSoon;
+            document.getElementById('statRecentCount').textContent = recentCount;
+
+            // recent notes list
+            const recentList = document.getElementById('recentNotesList'); if(recentList){ recentList.innerHTML='';
+              (notes.slice().sort((a,b)=> (b.id||0)-(a.id||0)).slice(0,5)).forEach(n=>{
+                const div = document.createElement('div'); div.className='recent-note-item';
+                div.innerHTML = `<strong>${(n.title||'Untitled')}</strong><div style="font-size:12px;color:var(--muted-text-color)">${(n.content||'').slice(0,120)}</div>`;
+                recentList.appendChild(div);
+              }); }
+
+            // attendance summary (simple percent present)
+            if(Array.isArray(attendance) && attendance.length){ const present = attendance.filter(a=>a.status==='present').length; const pct = Math.round((present/attendance.length)*100); document.getElementById('statAttendance').textContent = pct + '%'; }
+            else document.getElementById('statAttendance').textContent = '—';
+
+            // upcoming deadlines list count
+            if(Array.isArray(assignments) && assignments.length){ const soon = assignments.filter(a=> withinDays(a.due,7)).length; document.getElementById('statDeadlines').textContent = soon; } else document.getElementById('statDeadlines').textContent='0';
+          }catch(e){ console.warn('dashboard render', e); }
+        }
+
+        // re-render on load and when notes change
+        window.addEventListener('load', ()=> setTimeout(renderDashboard, 300));
+        const notesContainer = document.getElementById('notesContainer');
+        if(notesContainer){ const mo = new MutationObserver(()=> renderDashboard()); mo.observe(notesContainer, { childList:true, subtree:true }); }
+        // expose for manual refresh
+        window.renderDashboard = renderDashboard;
+      })();
+    </script>
+    <script>
+      // Subject Groups: minimal UI and persistence
+      (function(){
+        const groupsKey = 'subjectGroups';
+        const subjectsKey = 'subjects';
+        const groupsListEl = document.getElementById('groupsList');
+        const addGroupBtn = document.getElementById('addGroupBtn');
+        const newGroupName = document.getElementById('newGroupName');
+        const assignSelect = document.getElementById('assignSubjectSelect');
+
+        function loadSubjects(){ try{ return JSON.parse(localStorage.getItem(subjectsKey)||'[]'); }catch(e){return[];} }
+        function loadGroups(){ try{ return JSON.parse(localStorage.getItem(groupsKey)||'[]'); }catch(e){return[];} }
+        function saveGroups(g){ localStorage.setItem(groupsKey, JSON.stringify(g||[])); }
+
+        function renderAssignOptions(){ const subs = loadSubjects(); assignSelect.innerHTML = '<option value="">Select subject to assign</option>'; subs.forEach(s=>{ const o = document.createElement('option'); o.value = s.id||s.name; o.textContent = s.name || s; assignSelect.appendChild(o); }); }
+
+        function renderGroups(){ const groups = loadGroups(); groupsListEl.innerHTML=''; if(groups.length===0){ groupsListEl.innerHTML = '<div style="color:var(--muted-text-color)">No groups yet</div>'; return; }
+          groups.forEach(g=>{
+            const el = document.createElement('div'); el.className='group-item';
+            const left = document.createElement('div'); left.innerHTML = `<strong>${g.name}</strong><div class="meta">${(g.subjects||[]).length} subjects</div>`;
+            const controls = document.createElement('div'); controls.className='group-controls';
+            const viewBtn = document.createElement('button'); viewBtn.className='secondary-btn'; viewBtn.textContent='View'; viewBtn.addEventListener('click', ()=>{ // filter subjects list
+              const subs = loadSubjects(); const ids = new Set(g.subjects||[]);
+              const list = document.getElementById('subjectsList'); if(list){ list.innerHTML=''; subs.filter(s=> ids.has(String(s.id) || String(s.name))).forEach(s=>{ const d = document.createElement('div'); d.textContent = s.name || s; list.appendChild(d); }); }
+            });
+            const delBtn = document.createElement('button'); delBtn.className='secondary-btn'; delBtn.textContent='Delete'; delBtn.addEventListener('click', ()=>{ if(confirm('Remove group "'+g.name+'"?')){ const all = loadGroups().filter(x=> x.name!==g.name); saveGroups(all); renderGroups(); } });
+            controls.appendChild(viewBtn); controls.appendChild(delBtn);
+            el.appendChild(left); el.appendChild(controls); groupsListEl.appendChild(el);
+          }); }
+
+        addGroupBtn && addGroupBtn.addEventListener('click', ()=>{
+          const name = (newGroupName.value||'').trim(); if(!name) return alert('Enter a group name');
+          const groups = loadGroups(); if(groups.find(g=>g.name===name)) return alert('Group exists');
+          groups.push({ id: Date.now(), name: name, subjects: [] }); saveGroups(groups); newGroupName.value=''; renderGroups();
+        });
+
+        assignSelect && assignSelect.addEventListener('change', ()=>{
+          const val = assignSelect.value; if(!val) return; const name = assignSelect.options[assignSelect.selectedIndex].text;
+          const groups = loadGroups(); if(groups.length===0) return alert('Create a group first');
+          const group = groups[0]; // for minimal UI, assign to the first group (or enhance to pick)
+          if(!group.subjects) group.subjects = [];
+          if(!group.subjects.includes(val)) group.subjects.push(val);
+          saveGroups(groups); renderGroups();
+          assignSelect.selectedIndex = 0;
+        });
+
+        // init
+        renderAssignOptions(); renderGroups();
+        // re-render subject options when subjects change (expose a helper event)
+        window.refreshSubjectsForGroups = renderAssignOptions;
+      })();
+    </script>
+    <script>
+      // Collapsible sidebar toggle with persistence
+      (function(){
+        const btn = document.getElementById('toggleSidebarBtn');
+        if(!btn) return;
+        function apply(state){
+          if(state){ document.body.classList.add('sidebar-collapsed'); btn.setAttribute('aria-expanded','false'); }
+          else { document.body.classList.remove('sidebar-collapsed'); btn.setAttribute('aria-expanded','true'); }
+          localStorage.setItem('ui.sidebarCollapsed', state ? '1' : '0');
+        }
+        btn.addEventListener('click', ()=> apply(!document.body.classList.contains('sidebar-collapsed')));
+        // restore
+        const saved = localStorage.getItem('ui.sidebarCollapsed');
+        if(saved === '1') apply(true); else apply(false);
+      })();
+    </script>
+    <script>
+      // Mini-nav behavior: wire collapsed icons to actions
+      (function(){
+        const miniHome = document.getElementById('miniHome');
+        const miniFolders = document.getElementById('miniFolders');
+        const miniSearch = document.getElementById('miniSearch');
+        const miniStickies = document.getElementById('miniStickies');
+        const breadcrumb = document.getElementById('breadcrumb');
+        const foldersTree = document.getElementById('foldersTree');
+        const search = document.getElementById('searchInput');
+        const stickyOpen = document.getElementById('openStickyBtn');
+        if(miniHome) miniHome.addEventListener('click', ()=>{ // simulate Home
+          const homeLink = breadcrumb && breadcrumb.querySelector('a.crumb'); if(homeLink){ homeLink.click(); }
+        });
+        if(miniFolders) miniFolders.addEventListener('click', ()=>{ if(foldersTree) foldersTree.scrollIntoView({behavior:'smooth', block:'center'}); });
+        if(miniSearch) miniSearch.addEventListener('click', ()=>{ if(search){ search.focus(); search.scrollIntoView({behavior:'smooth', block:'center'}); } });
+        if(miniStickies) miniStickies.addEventListener('click', ()=>{ if(stickyOpen) stickyOpen.click(); });
       })();
     </script>
     <!-- Empty state markup and logic -->
