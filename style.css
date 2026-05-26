@@ -708,6 +708,44 @@ button:focus-visible{
 .folder-actions button{ margin-left:6px; padding:4px 6px; font-size:12px }
 
 
+/* Subjects */
+.subject-chip{
+    display:inline-block;
+    padding:4px 8px;
+    border-radius:999px;
+    font-size:12px;
+    color:#111;
+    margin-right:6px;
+}
+.subject-item{ display:flex; align-items:center; justify-content:space-between; padding:6px 4px; border-radius:6px }
+.subject-list{ list-style:none; padding-left:0; margin:6px 0 }
+.subject-list .subject-row{ display:flex; align-items:center; gap:8px }
+
+/* Note sections */
+.section-block{ background: color-mix(in srgb, var(--surface-2-color) 90%, transparent); padding:8px; border-radius:6px; margin-top:8px; border:1px solid var(--border-color) }
+.section-header{ display:flex; justify-content:space-between; align-items:center; gap:8px }
+.section-type{ font-weight:700; font-size:13px; color:var(--muted-text-color) }
+.section-content{ margin-top:8px }
+.section-content textarea{ height:80px; }
+.section-remove{ background:transparent; border:1px solid var(--border-color); padding:4px 6px; border-radius:6px; cursor:pointer }
+
+/* Attendance panel */
+.attendance-panel{ margin-top:8px; padding:8px; border-radius:6px; border:1px dashed var(--border-color); background: color-mix(in srgb, var(--surface-color) 96%, transparent) }
+.attendance-summary{ margin-top:6px; font-size:13px }
+.attendance-row{ display:flex; justify-content:space-between; gap:8px; padding:6px 4px; border-radius:6px }
+.low-attendance{ color: #b91c1c; font-weight:700 }
+
+/* Assignments */
+.assignment-panel{ margin-top:8px; padding:8px; border-radius:6px; border:1px dashed var(--border-color); background: color-mix(in srgb, var(--surface-color) 98%, transparent) }
+.assignments-list{ margin-top:8px; display:flex; flex-direction:column; gap:8px }
+.assignment-row{ display:flex; justify-content:space-between; gap:8px; padding:8px; border-radius:6px; background:var(--surface-2-color); border:1px solid var(--border-color); align-items:center }
+.assignment-meta{ font-size:13px; color:var(--muted-text-color) }
+.assignment-actions button{ margin-left:8px; padding:6px 8px; font-size:13px }
+.assignment-overdue{ color:#b91c1c; font-weight:700 }
+.assignment-due{ font-weight:600 }
+
+
+
 /* Recent history panel (minimal) */
 .recent-section{ margin-top:16px }
 .recent-section h2{ margin:0 0 8px 0; font-size:16px }

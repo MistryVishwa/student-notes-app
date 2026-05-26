@@ -75,6 +75,17 @@ let globalTags = [];
 // Folder model: simple parent-relation tree
 let folders = JSON.parse(localStorage.getItem('folders')) || [];
 let currentFolder = null; // currently selected folder id (string)
+// Subjects mapping: name -> color (hex)
+let subjects = JSON.parse(localStorage.getItem('subjects')) || {};
+// Attendance mapping: subject -> [{date:'YYYY-MM-DD', status:'present'|'absent'}]
+let attendance = JSON.parse(localStorage.getItem('attendance')) || {};
+
+function saveAttendance(){ try{ localStorage.setItem('attendance', JSON.stringify(attendance)); }catch(e){} }
+
+// Assignments list: {id,title,subject,due:'YYYY-MM-DD',completed:boolean}
+let assignments = JSON.parse(localStorage.getItem('assignments')) || [];
+function saveAssignments(){ try{ localStorage.setItem('assignments', JSON.stringify(assignments)); }catch(e){} }
+
 
 const TAGS_KEY = 'allTags';
 
@@ -141,6 +152,7 @@ function normalizeNotes(){
             id: n.id || (Date.now() + Math.floor(Math.random()*1000)),
             title: n.title || '',
             content: n.content || '',
+            sections: Array.isArray(n.sections) ? n.sections : [],
             tags: Array.isArray(n.tags) ? n.tags : (n.tags ? String(n.tags).split(',').map(s=>s.trim()).filter(Boolean) : []),
             subject: n.subject || '',
             pinned: !!n.pinned,
@@ -188,6 +200,7 @@ function addNote() {
         tags: tagsText ? tagsText.split(',').map(t=>t.trim()).filter(Boolean) : [],
         subject: subjectText || '',
         folderId: folderId || '',
+        sections: gatherSectionsFromEditor(),
         pinned: false
     };
 
@@ -213,6 +226,13 @@ function addNote() {
     // update global tags list and suggestions
     addGlobalTags(newNote.tags);
     renderSuggestedTags();
+
+    // ensure subject exists in subjects map (use default color if missing)
+    if(newNote.subject && !subjects[newNote.subject]){
+        subjects[newNote.subject] = '#ffd966';
+        try{ localStorage.setItem('subjects', JSON.stringify(subjects)); }catch(e){}
+        try{ renderSubjects(); }catch(e){}
+    }
 }
 
 function displayNotes(){
@@ -302,7 +322,25 @@ function displayNotes(){
         tmp.innerHTML = safeHtml;
         if(q) highlightInElement(tmp, q);
         const contentHtml = `<div class="note-content">${tmp.innerHTML}</div>`;
-        const subjectHtml = note.subject ? `<div class="note-subject">Subject: ${escapeHtml(note.subject)}</div>` : '';
+        const subjectColor = (note.subject && subjects[note.subject]) ? sanitizeColor(subjects[note.subject]) : '';
+        const subjectHtml = note.subject ? `<div class="note-subject"><span class="subject-chip" style="background:${subjectColor};">${escapeHtml(note.subject)}</span></div>` : '';
+        // render sections
+        const sectionsHtml = (note.sections || []).map(s=>{
+            const t = String(s.type || '').toLowerCase();
+            const c = s.content || '';
+            if(t === 'code'){
+                return `<div class="note-section"><div class="section-type">Code / Example</div><pre class="note-code">${escapeHtml(c)}</pre></div>`;
+            }
+            if(t === 'formula'){
+                return `<div class="note-section"><div class="section-type">Formula / Reference</div><pre class="note-formula">${escapeHtml(c)}</pre></div>`;
+            }
+            const titleMap = { lecture: 'Lecture', important: 'Important', summary: 'Summary' };
+            const heading = titleMap[t] || escapeHtml(s.type || 'Section');
+            let raw = '';
+            try{ raw = window.marked ? marked.parse(c||'') : escapeHtml(c); }catch(e){ raw = escapeHtml(c); }
+            const safe = (window.DOMPurify && DOMPurify.sanitize) ? DOMPurify.sanitize(raw) : raw;
+            return `<div class="note-section"><div class="section-type">${heading}</div><div class="section-content">${safe}</div></div>`;
+        }).join('');
         const tagsHtml = (note.tags || []).length ? `<div class="note-tags">${note.tags.map(t=>`<button type="button" class="tag" onclick="applyTagFilter(${JSON.stringify(t)})">${escapeHtml(t)}</button>`).join('')}</div>` : '';
 
         // Favorite & Pin buttons
@@ -317,6 +355,7 @@ function displayNotes(){
                 ${contentHtml}
                 ${subjectHtml}
                 ${tagsHtml}
+                ${sectionsHtml}
                 <button class="delete-btn" onclick="deleteNote('${note.id}')" aria-label="Delete note">X</button>
 
             </div>
@@ -541,6 +580,10 @@ function refreshFilters(){
     // populate folder select for note creation and ensure folders are rendered
     populateFolderSelect();
     renderFolders();
+    // render subjects panel and ensure subject list affects filter
+    renderSubjects();
+    populateFilterSubject();
+    renderAttendancePanel();
 }
 
 // Search and filter input wiring
@@ -601,6 +644,29 @@ document.addEventListener('DOMContentLoaded', () => {
         });
         newTagInput.addEventListener('keydown', (e)=>{ if(e.key === 'Enter'){ e.preventDefault(); addTagBtn.click(); } });
     }
+    // Wire subject add
+    const newSubjectInput = document.getElementById('newSubjectName');
+    const newSubjectColor = document.getElementById('newSubjectColor');
+    const addSubjectBtn = document.getElementById('addSubjectBtn');
+    if(addSubjectBtn && newSubjectInput){
+        addSubjectBtn.addEventListener('click', ()=>{
+            const n = (newSubjectInput.value||'').trim();
+            const c = newSubjectColor ? newSubjectColor.value : '#ffd966';
+            if(!n) return;
+            addSubject(n, c);
+            newSubjectInput.value = '';
+        });
+        newSubjectInput.addEventListener('keydown', (e)=>{ if(e.key === 'Enter'){ e.preventDefault(); addSubjectBtn.click(); } });
+    }
+    // Wire sections add/remove UI
+    const addSectionBtn = document.getElementById('addSectionBtn');
+    const newSectionType = document.getElementById('newSectionType');
+    if(addSectionBtn && newSectionType){
+        addSectionBtn.addEventListener('click', ()=>{
+            const t = (newSectionType.value||'lecture');
+            addSectionBlock(t, '');
+        });
+    }
     // Wire folder add button
     const newFolderInput = document.getElementById('newFolderName');
     const addFolderBtn = document.getElementById('addFolderBtn');
@@ -615,6 +681,49 @@ document.addEventListener('DOMContentLoaded', () => {
     }
     // Render folders and populate selects on load
     try{ renderFolders(); populateFolderSelect(); }catch(e){}
+    // Attendance wiring
+    const attendanceDate = document.getElementById('attendanceDate');
+    const markPresentBtn = document.getElementById('markPresentBtn');
+    const markAbsentBtn = document.getElementById('markAbsentBtn');
+    const attendanceSubject = document.getElementById('attendanceSubject');
+    if(attendanceDate) attendanceDate.value = formatYMD(new Date());
+    if(markPresentBtn){
+        markPresentBtn.addEventListener('click', ()=>{
+            const subj = attendanceSubject?.value || '';
+            if(!subj){ alert('Select a subject first'); return; }
+            const ok = addAttendanceRecord(subj, attendanceDate?.value, 'present');
+            if(ok){ renderAttendancePanel(); alert('Recorded present for '+subj); }
+        });
+    }
+    if(markAbsentBtn){
+        markAbsentBtn.addEventListener('click', ()=>{
+            const subj = attendanceSubject?.value || '';
+            if(!subj){ alert('Select a subject first'); return; }
+            const ok = addAttendanceRecord(subj, attendanceDate?.value, 'absent');
+            if(ok){ renderAttendancePanel(); alert('Recorded absent for '+subj); }
+        });
+    }
+    // initial attendance panel render
+    try{ renderAttendancePanel(); }catch(e){}
+    // Assignments wiring
+    const addAssignmentBtn = document.getElementById('addAssignmentBtn');
+    const assignmentTitle = document.getElementById('assignmentTitle');
+    const assignmentSubject = document.getElementById('assignmentSubject');
+    const assignmentDue = document.getElementById('assignmentDue');
+    if(addAssignmentBtn){
+        addAssignmentBtn.addEventListener('click', ()=>{
+            const t = (assignmentTitle?.value||'').trim();
+            const s = (assignmentSubject?.value||'').trim();
+            const d = assignmentDue?.value || '';
+            if(!t){ alert('Enter assignment title'); return; }
+            addAssignment(t,s,d);
+            assignmentTitle.value = '';
+            if(assignmentSubject) assignmentSubject.value = '';
+            if(assignmentDue) assignmentDue.value = '';
+        });
+    }
+    // render assignments and subject select initially
+    try{ renderAssignmentSubjectSelect(); renderAssignments(); }catch(e){}
     // Live preview handling
     if(noteInput && livePreview && livePreviewToggle){
         const updatePreview = () => {
@@ -795,6 +904,219 @@ function populateFolderSelect(){
     const opts = ['<option value="">No folder</option>'].concat(buildOptions(''));
     sel.innerHTML = opts.join('');
 }
+
+// ---------------------
+// Subjects (minimal)
+// ---------------------
+function saveSubjects(){
+    try{ localStorage.setItem('subjects', JSON.stringify(subjects)); }catch(e){}
+}
+
+function sanitizeColor(c){
+    if(!c) return '';
+    const s = String(c).trim();
+    const hex = s.replace('#','');
+    if(/^[0-9a-fA-F]{3}$/.test(hex)) return '#'+hex;
+    if(/^[0-9a-fA-F]{6}$/.test(hex)) return '#'+hex;
+    return '';
+}
+
+function addSubject(name, color){
+    if(!name) return;
+    const n = String(name).trim();
+    const col = sanitizeColor(color) || '#ffd966';
+    subjects[n] = col;
+    saveSubjects();
+    renderSubjects();
+    populateFilterSubject();
+}
+
+function renderSubjects(){
+    const container = document.getElementById('subjectsList');
+    if(!container) return;
+    const keys = Object.keys(subjects || {});
+    if(!keys.length){ container.innerHTML = '<div class="muted">No subjects</div>'; return; }
+    container.innerHTML = keys.map(k=>{
+        const col = sanitizeColor(subjects[k]) || '#eee';
+        return `<div class="subject-item"><div class="subject-row"><span class="subject-chip" style="background:${col};">${escapeHtml(k)}</span></div><div><button onclick="applySubjectFilter('${escapeHtml(k)}')">Filter</button></div></div>`;
+    }).join('');
+}
+
+function applySubjectFilter(name){
+    filterSubject = name || '';
+    const select = document.getElementById('filterSubject');
+    if(select) select.value = name || '';
+    displayNotes();
+}
+
+function populateFilterSubject(){
+    const select = document.getElementById('filterSubject');
+    if(!select) return;
+    const subjectsFromNotes = Array.from(new Set(notes.map(n=> (n.subject||'').trim()).filter(Boolean)));
+    const known = Array.from(new Set([].concat(Object.keys(subjects||{}), subjectsFromNotes))).filter(Boolean);
+    const current = select.value;
+    select.innerHTML = '<option value="">All subjects</option>' + known.map(s=>`<option value="${escapeHtml(s)}">${escapeHtml(s)}</option>`).join('');
+    select.value = current || '';
+}
+
+// ---------------------
+// Assignments helpers
+// ---------------------
+function isOverdue(due){
+    if(!due) return false;
+    const today = formatYMD(new Date());
+    return due < today;
+}
+
+function addAssignment(title, subject, due){
+    if(!title || !title.trim()) return false;
+    const id = 'a_' + (Date.now() + Math.floor(Math.random()*1000));
+    assignments.push({ id, title: title.trim(), subject: subject || '', due: formatYMD(due || new Date()), completed: false });
+    saveAssignments();
+    renderAssignments();
+    return true;
+}
+
+function toggleAssignmentComplete(id){
+    const idx = assignments.findIndex(a=> a.id === id);
+    if(idx === -1) return;
+    assignments[idx].completed = !assignments[idx].completed;
+    saveAssignments();
+    renderAssignments();
+}
+
+function removeAssignment(id){
+    assignments = assignments.filter(a=> a.id !== id);
+    saveAssignments();
+    renderAssignments();
+}
+
+function renderAssignments(){
+    const container = document.getElementById('assignmentsList');
+    if(!container) return;
+    if(assignments.length === 0){ container.innerHTML = '<div class="muted">No assignments</div>'; return; }
+    container.innerHTML = assignments.map(a=>{
+        const overdue = !a.completed && isOverdue(a.due);
+        const overdueClass = overdue ? ' assignment-overdue' : '';
+        const subj = a.subject ? `<span class="assignment-meta">${escapeHtml(a.subject)}</span>` : '';
+        const due = a.due ? `<span class="assignment-due${overdueClass}">${escapeHtml(a.due)}</span>` : '';
+        const title = escapeHtml(a.title) + (a.completed ? ' (done)' : '');
+        return `<div class="assignment-row" id="${a.id}">
+            <div>
+                <div class="assignment-title">${title}</div>
+                <div class="assignment-meta">${subj} ${due}</div>
+            </div>
+            <div class="assignment-actions">
+                <button onclick="toggleAssignmentComplete('${a.id}')">${a.completed ? 'Undo' : 'Complete'}</button>
+                <button onclick="removeAssignment('${a.id}')">Remove</button>
+            </div>
+        </div>`;
+    }).join('');
+}
+
+function renderAssignmentSubjectSelect(){
+    const sel = document.getElementById('assignmentSubject');
+    if(!sel) return;
+    const keys = Object.keys(subjects || {});
+    const opts = ['<option value="">Subject</option>'].concat(keys.map(k=>`<option value="${escapeHtml(k)}">${escapeHtml(k)}</option>`));
+    sel.innerHTML = opts.join('');
+}
+
+// ---------------------
+// Attendance helpers
+// ---------------------
+function formatYMD(d){
+    if(!d) return '';
+    const dt = new Date(d);
+    const y = dt.getFullYear();
+    const m = String(dt.getMonth()+1).padStart(2,'0');
+    const day = String(dt.getDate()).padStart(2,'0');
+    return `${y}-${m}-${day}`;
+}
+
+function addAttendanceRecord(subject, dateStr, status){
+    if(!subject) return false;
+    const d = formatYMD(dateStr || new Date());
+    attendance[subject] = attendance[subject] || [];
+    // replace record for date if exists
+    const idx = attendance[subject].findIndex(r=> r.date === d);
+    if(idx !== -1) attendance[subject][idx].status = status;
+    else attendance[subject].push({ date: d, status });
+    saveAttendance();
+    return true;
+}
+
+function getAttendance(subject){
+    return (attendance[subject] || []).slice().sort((a,b)=> a.date.localeCompare(b.date));
+}
+
+function attendancePercent(subject){
+    const recs = attendance[subject] || [];
+    if(!recs.length) return null;
+    const present = recs.filter(r=> r.status === 'present').length;
+    return Math.round((present / recs.length) * 100);
+}
+
+function renderAttendancePanel(){
+    const sel = document.getElementById('attendanceSubject');
+    if(sel){
+        const keys = Object.keys(subjects || {});
+        const opts = ['<option value="">Select subject</option>'].concat(keys.map(k=>`<option value="${escapeHtml(k)}">${escapeHtml(k)}</option>`));
+        sel.innerHTML = opts.join('');
+    }
+    // summary area
+    const sum = document.getElementById('attendanceSummary');
+    if(!sum) return;
+    const keys = Object.keys(subjects || {});
+    if(!keys.length){ sum.innerHTML = '<div class="muted">No subjects to show attendance</div>'; return; }
+    sum.innerHTML = keys.map(k=>{
+        const pct = attendancePercent(k);
+        const pctText = pct === null ? 'No records' : pct + '%';
+        const warn = (pct !== null && pct < 75) ? ' low-attendance' : '';
+        return `<div class="attendance-row"><div>${escapeHtml(k)}</div><div class="attendance-pct${warn}">${pctText}</div></div>`;
+    }).join('');
+}
+
+// Section editor helpers
+function addSectionBlock(type, content){
+    const list = document.getElementById('sectionsList');
+    if(!list) return;
+    const id = 'sec_' + (Date.now() + Math.floor(Math.random()*1000));
+    const div = document.createElement('div');
+    div.className = 'section-block';
+    div.id = id;
+    div.innerHTML = `
+        <div class="section-header">
+            <div class="section-type">${escapeHtml(type)}</div>
+            <div><button class="section-remove" type="button">Remove</button></div>
+        </div>
+        <div class="section-content">
+            <textarea placeholder="Section content">${escapeHtml(content||'')}</textarea>
+        </div>
+    `;
+    list.appendChild(div);
+    const btn = div.querySelector('.section-remove');
+    if(btn) btn.addEventListener('click', ()=>{ div.remove(); });
+}
+
+function gatherSectionsFromEditor(){
+    const list = document.getElementById('sectionsList');
+    if(!list) return [];
+    const out = [];
+    Array.from(list.children).forEach(block=>{
+        const type = block.querySelector('.section-type')?.textContent || 'section';
+        const content = block.querySelector('textarea')?.value || '';
+        out.push({ type: type.trim().toLowerCase(), content });
+    });
+    return out;
+}
+
+function renderSectionsInEditor(sections){
+    const list = document.getElementById('sectionsList');
+    if(!list) return;
+    list.innerHTML = '';
+    (sections || []).forEach(s=> addSectionBlock(s.type || 'section', s.content || ''));
+}
 function recordRecent(note){
     if(!note) return;
     try{
@@ -857,6 +1179,8 @@ function openNote(id){
     if(inputEl) inputEl.focus();
     // record that user opened this note
     try{ recordRecent(note); }catch(e){}
+    // populate sections editor
+    try{ renderSectionsInEditor(note.sections || []); }catch(e){}
 }
 
 // Render recent on load

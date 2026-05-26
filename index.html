@@ -29,6 +29,44 @@
           <input id="newFolderName" placeholder="New folder name" style="flex:1; padding:6px" />
           <button id="addFolderBtn" type="button">Add</button>
         </div>
+        <hr style="margin:12px 0" />
+        <h3>Subjects</h3>
+        <div id="subjectsList"></div>
+        <div style="margin-top:8px; display:flex; gap:8px; align-items:center">
+          <input id="newSubjectName" placeholder="New subject" style="flex:1; padding:6px" />
+          <input id="newSubjectColor" type="color" value="#ffd966" title="Pick color" />
+          <button id="addSubjectBtn" type="button">Add</button>
+        </div>
+        <hr style="margin:12px 0" />
+        <h3>Attendance</h3>
+        <div id="attendancePanel" class="attendance-panel">
+          <div style="display:flex; gap:8px; align-items:center; margin-bottom:8px">
+            <select id="attendanceSubject" style="flex:1">
+              <option value="">Select subject</option>
+            </select>
+            <input id="attendanceDate" type="date" />
+          </div>
+          <div style="display:flex; gap:8px; margin-bottom:8px">
+            <button id="markPresentBtn" type="button">Present</button>
+            <button id="markAbsentBtn" type="button">Absent</button>
+          </div>
+          <div id="attendanceSummary" class="attendance-summary"></div>
+        </div>
+        <hr style="margin:12px 0" />
+        <h3>Assignments</h3>
+        <div id="assignmentsPanel" class="assignment-panel">
+          <input id="assignmentTitle" placeholder="Assignment title" style="width:100%; padding:6px; margin-bottom:6px" />
+          <div style="display:flex; gap:8px; margin-bottom:8px; align-items:center">
+            <select id="assignmentSubject" style="flex:1">
+              <option value="">Subject</option>
+            </select>
+            <input id="assignmentDue" type="date" />
+          </div>
+          <div style="display:flex; gap:8px; margin-bottom:8px">
+            <button id="addAssignmentBtn" type="button">Add Assignment</button>
+          </div>
+          <div id="assignmentsList" class="assignments-list"></div>
+        </div>
       </aside>
       <div class="input-area">
         <input id="noteTitle" placeholder="Title (optional)" />
@@ -39,6 +77,21 @@
           <select id="noteFolder" aria-label="Folder" title="Folder">
             <option value="">No folder</option>
           </select>
+        </div>
+        <!-- Sections: minimal structured blocks inside a note -->
+        <div id="sectionsArea" style="margin-top:10px">
+          <label style="display:block; margin-bottom:6px; color:var(--muted-text-color)">Sections</label>
+          <div id="sectionsList"></div>
+          <div style="display:flex; gap:8px; margin-top:8px; align-items:center">
+            <select id="newSectionType">
+              <option value="lecture">Lecture</option>
+              <option value="important">Important</option>
+              <option value="formula">Formula / Reference</option>
+              <option value="summary">Summary</option>
+              <option value="code">Code / Example</option>
+            </select>
+            <button id="addSectionBtn">Add Section</button>
+          </div>
         </div>
         <div class="input-row actions">
           <label><input type="checkbox" id="livePreviewToggle" /> Live preview</label>
