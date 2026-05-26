@@ -349,6 +349,98 @@
         if(!board.classList.contains('sticky-hidden')) render();
       })();
     </script>
+    <script>
+      // Minimal drag-and-drop support for notes and folders
+      (function(){
+        function getDragAfterElement(container, y){
+          const draggableElements = [...container.querySelectorAll('.note:not(.dragging)')];
+          let closest = {offset: Number.NEGATIVE_INFINITY, element: null};
+          draggableElements.forEach(child=>{
+            const box = child.getBoundingClientRect();
+            const offset = y - box.top - box.height/2;
+            if(offset < 0 && offset > closest.offset){ closest = { offset, element: child }; }
+          });
+          return closest.element;
+        }
+
+        function enableNoteDrag(){
+          const container = document.getElementById('notesContainer');
+          if(!container) return;
+          container.querySelectorAll('.note').forEach(n=>{
+            n.setAttribute('draggable','true');
+            n.addEventListener('dragstart', e=>{
+              e.dataTransfer.setData('text/note-id', n.dataset.id || n.getAttribute('data-id') || '');
+              n.classList.add('dragging');
+              e.dataTransfer.effectAllowed = 'move';
+            });
+            n.addEventListener('dragend', ()=> n.classList.remove('dragging'));
+          });
+
+          container.addEventListener('dragover', e=>{
+            e.preventDefault();
+            const dragging = container.querySelector('.note.dragging');
+            if(!dragging) return;
+            const after = getDragAfterElement(container, e.clientY);
+            if(after == null) container.appendChild(dragging);
+            else container.insertBefore(dragging, after);
+          });
+
+          container.addEventListener('drop', e=>{
+            e.preventDefault();
+            // Save new order to localStorage if notes stored there
+            try{
+              const ids = [...container.querySelectorAll('.note')].map(el=> el.dataset.id || el.getAttribute('data-id'));
+              const notes = JSON.parse(localStorage.getItem('notes')||'[]');
+              if(Array.isArray(notes) && notes.length>0){
+                const map = new Map(notes.map(n=>[String(n.id), n]));
+                const reordered = ids.map(id=> map.get(String(id))).filter(Boolean);
+                if(reordered.length) localStorage.setItem('notes', JSON.stringify(reordered));
+              }
+            }catch(e){}
+          });
+        }
+
+        function enableFolderDrag(){
+          const tree = document.getElementById('foldersTree');
+          if(!tree) return;
+          tree.querySelectorAll('.folder-item').forEach(item=>{
+            item.setAttribute('draggable','true');
+            item.addEventListener('dragstart', e=>{ e.dataTransfer.setData('text/folder-id', item.dataset.id||''); item.classList.add('dragging'); });
+            item.addEventListener('dragend', ()=> item.classList.remove('dragging'));
+          });
+          tree.addEventListener('dragover', e=>{ e.preventDefault(); const dragging = tree.querySelector('.folder-item.dragging'); if(!dragging) return; const after = getDragAfterElement(tree, e.clientY); if(after==null) tree.appendChild(dragging); else tree.insertBefore(dragging, after); });
+          tree.addEventListener('drop', e=>{ e.preventDefault(); /* optionally persist folder order */ });
+        }
+
+        // allow dropping into kanban columns
+        document.querySelectorAll('.kanban-content').forEach(col=>{
+          col.addEventListener('dragover', e=>{ e.preventDefault(); e.dataTransfer.dropEffect = 'move'; });
+          col.addEventListener('drop', e=>{
+            e.preventDefault();
+            const noteId = e.dataTransfer.getData('text/note-id');
+            const dragging = document.querySelector('.note.dragging');
+            if(dragging){ col.appendChild(dragging); dragging.classList.remove('dragging'); }
+            // update status in storage if notes model supports it
+            try{
+              const status = col.closest('.kanban-column')?.dataset?.status || '';
+              const notes = JSON.parse(localStorage.getItem('notes')||'[]');
+              const idx = notes.findIndex(n=> String(n.id) === String(noteId));
+              if(idx>-1){ notes[idx].status = status; localStorage.setItem('notes', JSON.stringify(notes)); }
+            }catch(e){}
+          });
+        });
+
+        // ensure drag handlers are attached after notes are rendered
+        const prevDisplay = window.displayNotes;
+        window.displayNotes = function(){
+          try{ if(typeof prevDisplay === 'function') prevDisplay.apply(this, arguments); }
+          finally{ setTimeout(()=>{ enableNoteDrag(); enableFolderDrag(); }, 50); }
+        }
+
+        // initialize on load
+        window.addEventListener('load', ()=>{ setTimeout(()=>{ enableNoteDrag(); enableFolderDrag(); }, 120); });
+      })();
+    </script>
     <!-- Empty state markup and logic -->
     <div id="emptyState" class="empty-state" style="display:none" aria-hidden="true">
       <div class="empty-art" aria-hidden="true">
