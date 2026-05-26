@@ -230,6 +230,27 @@
     <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/dompurify@2.4.0/dist/purify.min.js"></script>
     <script src="script.js"></script>
+    <script>
+      // Minimal skeleton placeholders while app loads
+      (function(){
+        const container = document.getElementById('notesContainer');
+        if(!container) return;
+        // create 4 skeleton cards
+        function showSkeletons(count=4){
+          container.innerHTML = '';
+          for(let i=0;i<count;i++){
+            const card = document.createElement('div');
+            card.className = 'note skeleton-card skeleton';
+            card.innerHTML = '<div style="padding:12px"><div class="skeleton-line full"></div><div class="skeleton-line medium"></div><div class="skeleton-line short"></div></div>';
+            container.appendChild(card);
+          }
+        }
+        // show skeletons briefly while script initializes
+        showSkeletons(4);
+        // remove skeletons after a short delay; displayNotes() will populate real notes
+        window.addEventListener('load', ()=> setTimeout(()=>{ if(typeof displayNotes==='function') displayNotes(); }, 600));
+      })();
+    </script>
     </div>
 </body>
 </html>

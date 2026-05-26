@@ -1233,6 +1233,22 @@ button[onclick="addNote()"]{
 .glass body{ background: linear-gradient(135deg, #f8fafc 0%, #eef2ff 100%) fixed !important; }
 
 
+/* Skeleton loading placeholders */
+.skeleton { 
+    background: linear-gradient(90deg, rgba(0,0,0,0.06), rgba(0,0,0,0.02), rgba(0,0,0,0.06));
+    background-size: 200% 100%;
+    animation: shimmer 1.2s linear infinite;
+    border-radius: 8px;
+}
+.skeleton-card{ height:140px; }
+.skeleton-line{ height:14px; margin:10px 0; border-radius:6px; }
+.skeleton-line.short{ width:40%; }
+.skeleton-line.medium{ width:65%; }
+.skeleton-line.full{ width:100%; }
+
+@keyframes shimmer{ 0%{ background-position:200% 0 } 100%{ background-position:-200% 0 } }
+
+
 
 
 
