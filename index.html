@@ -67,6 +67,22 @@
       </aside>
       <div class="input-area">
         <input id="noteTitle" placeholder="Title (optional)" />
+        <!-- Editor toolbar (bold, italic, heading, list, code, link) -->
+        <div class="editor-toolbar" role="toolbar" aria-label="Formatting toolbar">
+          <button type="button" class="btn" data-action="bold" title="Bold (Ctrl+B)"><strong>B</strong></button>
+          <button type="button" class="btn" data-action="italic" title="Italic (Ctrl+I)"><em>I</em></button>
+          <button type="button" class="btn" data-action="underline" title="Underline"><span style="text-decoration:underline">U</span></button>
+          <div class="divider" aria-hidden="true"></div>
+          <button type="button" class="btn" data-action="h1" title="Heading 1">H1</button>
+          <button type="button" class="btn" data-action="h2" title="Heading 2">H2</button>
+          <div class="divider" aria-hidden="true"></div>
+          <button type="button" class="btn" data-action="ul" title="Bullet list">• List</button>
+          <button type="button" class="btn" data-action="ol" title="Numbered list">1. List</button>
+          <button type="button" class="btn" data-action="code" title="Code block">{ }</button>
+          <div class="divider" aria-hidden="true"></div>
+          <button type="button" class="btn" data-action="link" title="Insert link">Link</button>
+          <button type="button" class="btn" data-action="quote" title="Blockquote">“”</button>
+        </div>
         <textarea id="noteInput" placeholder="Write your note here... (Markdown supported)"></textarea>
         <div class="input-row">
           <input id="noteTags" placeholder="Tags (comma separated)" />
@@ -258,6 +274,65 @@
     <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/dompurify@2.4.0/dist/purify.min.js"></script>
     <script src="script.js"></script>
+    <script>
+      // Formatting toolbar functionality (minimal, Markdown-based)
+      (function(){
+        const ta = document.getElementById('noteInput');
+        const toolbar = document.querySelector('.editor-toolbar');
+        const previewToggle = document.getElementById('livePreviewToggle');
+        const previewEl = document.getElementById('livePreview');
+        if(!ta || !toolbar) return;
+
+        function wrapSelection(before, after, placeholder){
+          const start = ta.selectionStart, end = ta.selectionEnd;
+          const sel = ta.value.substring(start, end) || placeholder || '';
+          const newVal = ta.value.substring(0,start) + before + sel + after + ta.value.substring(end);
+          ta.value = newVal;
+          // restore selection around inserted content
+          const cursor = start + before.length + sel.length + after.length;
+          ta.focus(); ta.selectionStart = ta.selectionEnd = cursor;
+          updatePreviewIfNeeded();
+        }
+
+        function toggleLinePrefix(prefix){
+          const start = ta.selectionStart, end = ta.selectionEnd;
+          const before = ta.value.substring(0,start);
+          const sel = ta.value.substring(start,end);
+          const lines = sel.split(/\n/).map(l=> l.startsWith(prefix) ? l.replace(prefix,'') : prefix + l);
+          const newVal = before + lines.join('\n') + ta.value.substring(end);
+          ta.value = newVal; ta.focus(); updatePreviewIfNeeded();
+        }
+
+        toolbar.addEventListener('click', (e)=>{
+          const btn = e.target.closest('button[data-action]');
+          if(!btn) return;
+          const action = btn.dataset.action;
+          if(action==='bold') wrapSelection('**','**','bold text');
+          else if(action==='italic') wrapSelection('*','*','italic');
+          else if(action==='underline') wrapSelection('<u>','</u>','underlined');
+          else if(action==='h1') toggleLinePrefix('# ');
+          else if(action==='h2') toggleLinePrefix('## ');
+          else if(action==='ul') toggleLinePrefix('- ');
+          else if(action==='ol') toggleLinePrefix('1. ');
+          else if(action==='code') wrapSelection('\n```\n','\n```\n','code');
+          else if(action==='link'){
+            const url = prompt('Enter URL'); if(!url) return; const start = ta.selectionStart, end = ta.selectionEnd; const txt = ta.value.substring(start,end) || 'link text'; wrapSelection('[','('+url+')', txt);
+          }
+          else if(action==='quote') toggleLinePrefix('> ');
+        });
+
+        function updatePreviewIfNeeded(){
+          if(previewToggle && previewToggle.checked && previewEl){
+            try{ previewEl.innerHTML = DOMPurify.sanitize(marked.parse(ta.value||'')); previewEl.style.display='block'; previewEl.setAttribute('aria-hidden','false'); }
+            catch(e){}
+          }
+        }
+
+        // update preview live if toggled on
+        ta.addEventListener('input', ()=> updatePreviewIfNeeded());
+        if(previewToggle) previewToggle.addEventListener('change', ()=> updatePreviewIfNeeded());
+      })();
+    </script>
     <script>
       // Minimal skeleton placeholders while app loads
       (function(){

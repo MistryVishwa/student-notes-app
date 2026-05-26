@@ -1234,6 +1234,16 @@ input:focus, select:focus, textarea:focus{
     .sticky-board{ right:10px; left:10px; width:auto; bottom:12px; height:360px }
 }
 
+/* Editor toolbar (minimal Markdown helpers) */
+.editor-toolbar{ display:flex; gap:8px; flex-wrap:wrap; align-items:center; margin-bottom:8px }
+.editor-toolbar .btn{ background:transparent; border:1px solid rgba(0,0,0,0.06); padding:6px 8px; border-radius:8px; cursor:pointer; font-size:0.95rem }
+.editor-toolbar .btn:hover{ background: rgba(0,0,0,0.03) }
+.editor-toolbar .btn.icon{ width:36px; height:36px; display:flex; align-items:center; justify-content:center }
+.editor-toolbar .divider{ width:1px; height:28px; background:rgba(0,0,0,0.04); margin:0 6px }
+
+.editor-toolbar .btn.active{ background: linear-gradient(90deg,var(--accent-1),var(--accent-2)); color:white; border-color:transparent }
+
+
 /* Make the primary Add Note button more obvious */
 button[onclick="addNote()"]{
     background: linear-gradient(90deg, var(--accent-2), var(--accent-1));
