@@ -195,6 +195,30 @@
         <button id="resetTheme">Reset</button>
       </div>
     </section>
+    <!-- Sticky notes launcher -->
+    <div class="sticky-launch">
+      <button id="openStickyBtn" type="button" class="secondary-btn">Open Sticky Notes</button>
+      <button id="addStickyQuick" type="button" class="secondary-btn">Add Sticky</button>
+    </div>
+
+    <!-- Sticky notes board (hidden by default) -->
+    <div id="stickyBoard" class="sticky-board sticky-hidden" aria-hidden="true">
+      <div class="sticky-header">
+        <h4>Sticky Notes</h4>
+        <div class="sticky-controls">
+          <input id="stickyColor" type="color" value="#fff59d" title="Pick sticky color" />
+          <button id="closeSticky" class="secondary-btn">Close</button>
+        </div>
+      </div>
+      <div id="stickyArea" class="sticky-area" role="application" aria-label="Sticky notes area"></div>
+      <div class="sticky-footer">
+        <div style="font-size:12px;color:var(--muted-text-color)">Drag notes to position · Double-click to edit</div>
+        <div>
+          <button id="addSticky" class="secondary-btn">New</button>
+          <button id="clearStickies" class="secondary-btn">Clear</button>
+        </div>
+      </div>
+    </div>
     <script>
       (function(){
         const btn = document.getElementById('toggleGlass');
@@ -253,6 +277,76 @@
         showSkeletons(4);
         // remove skeletons after a short delay; displayNotes() will populate real notes
         window.addEventListener('load', ()=> setTimeout(()=>{ if(typeof displayNotes==='function') displayNotes(); }, 600));
+      })();
+    </script>
+    <script>
+      // Minimal sticky notes implementation (create, drag, color, persist)
+      (function(){
+        const openBtn = document.getElementById('openStickyBtn');
+        const board = document.getElementById('stickyBoard');
+        const area = document.getElementById('stickyArea');
+        const addBtn = document.getElementById('addSticky');
+        const addQuick = document.getElementById('addStickyQuick');
+        const closeBtn = document.getElementById('closeSticky');
+        const colorInput = document.getElementById('stickyColor');
+        const clearBtn = document.getElementById('clearStickies');
+
+        if(!board || !area) return;
+
+        function load(){
+          const raw = localStorage.getItem('stickies') || '[]';
+          try{ return JSON.parse(raw); }catch(e){ return []; }
+        }
+        function save(list){ localStorage.setItem('stickies', JSON.stringify(list||[])); }
+
+        function createStickyNode(note){
+          const el = document.createElement('div');
+          el.className = 'sticky-note';
+          el.style.left = (note.x||10) + 'px';
+          el.style.top = (note.y||10) + 'px';
+          el.style.background = note.color || '#fff59d';
+          el.dataset.id = note.id;
+          el.contentEditable = true;
+          el.innerText = note.text || '';
+
+          // save text on blur
+          el.addEventListener('blur', ()=>{
+            const list = load();
+            const idx = list.findIndex(i=>i.id==note.id);
+            if(idx>-1){ list[idx].text = el.innerText; save(list); }
+          });
+
+          // drag
+          let dx=0, dy=0, dragging=false;
+          el.addEventListener('mousedown', (e)=>{
+            dragging = true; el.classList.add('dragging'); dx = e.clientX - el.offsetLeft; dy = e.clientY - el.offsetTop; e.preventDefault();
+            window.addEventListener('mousemove', move);
+            window.addEventListener('mouseup', up);
+          });
+          function move(e){ if(!dragging) return; el.style.left = (e.clientX - dx) + 'px'; el.style.top = (e.clientY - dy) + 'px'; }
+          function up(){ if(!dragging) return; dragging=false; el.classList.remove('dragging'); window.removeEventListener('mousemove', move); window.removeEventListener('mouseup', up); savePosition(note.id, el); }
+
+          area.appendChild(el);
+          return el;
+        }
+
+        function savePosition(id, el){ const list = load(); const idx = list.findIndex(i=>i.id==id); if(idx>-1){ list[idx].x = parseInt(el.style.left)||0; list[idx].y = parseInt(el.style.top)||0; save(list); } }
+
+        function render(){ area.innerHTML=''; const list = load(); list.forEach(n=> createStickyNode(n)); }
+
+        function addNew(text=''){ const list = load(); const note = { id: Date.now(), x:10, y:10, color: colorInput.value||'#fff59d', text: text }; list.push(note); save(list); const el = createStickyNode(note); el.focus(); }
+
+        openBtn && openBtn.addEventListener('click', ()=>{ board.classList.toggle('sticky-hidden'); board.style.display = board.classList.contains('sticky-hidden') ? 'none' : 'flex'; board.setAttribute('aria-hidden', board.classList.contains('sticky-hidden') ? 'true' : 'false'); render(); });
+        closeBtn && closeBtn.addEventListener('click', ()=>{ board.classList.add('sticky-hidden'); board.style.display='none'; board.setAttribute('aria-hidden','true'); });
+        addBtn && addBtn.addEventListener('click', ()=> addNew(''));
+        addQuick && addQuick.addEventListener('click', ()=>{ board.classList.remove('sticky-hidden'); board.style.display='flex'; board.setAttribute('aria-hidden','false'); addNew('Quick note'); });
+        clearBtn && clearBtn.addEventListener('click', ()=>{ if(confirm('Clear all stickies?')){ save([]); render(); } });
+
+        // color change applies to future notes
+        colorInput && colorInput.addEventListener('change', ()=>{});
+
+        // initial render if visible
+        if(!board.classList.contains('sticky-hidden')) render();
       })();
     </script>
     <!-- Empty state markup and logic -->
