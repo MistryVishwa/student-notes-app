@@ -1,48 +1,223 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Notes App</title>
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="style.css">
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Student Notes App</title>
+
+  <!-- Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link
+    href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap"
+    rel="stylesheet"
+  />
+
+  <!-- Styles -->
+  <link rel="stylesheet" href="style.css" />
 </head>
+
 <body>
+  <div class="container">
 
-    <div class="container">
-        <h1>Notes App</h1>
+    <!-- Header -->
+    <header class="site-header">
+      <h1>Student Notes App</h1>
+    </header>
 
-        <div class="input-area">
-            <textarea id="noteInput" placeholder="Write your note here..."></textarea>
+    <!-- Main Content -->
+    <main class="main-content">
+
+      <!-- Input Area -->
+      <section class="input-area">
+        <input
+          id="noteTitle"
+          placeholder="Title (optional)"
+        />
+
+        <textarea
+          id="noteInput"
+          placeholder="Write your note here... (Markdown supported)"
+        ></textarea>
+
+        <div class="input-row">
+          <input
+            id="noteTags"
+            placeholder="Tags (comma separated)"
+          />
+
+          <input
+            id="noteSubject"
+            placeholder="Subject / Category (optional)"
+          />
+        </div>
+
+        <div class="input-row actions">
+          <label>
+            <input type="checkbox" id="livePreviewToggle" />
+            Live preview
+          </label>
+
+          <div style="display:flex; align-items:center; gap:10px;">
             <button onclick="addNote()">Add Note</button>
+            <span
+              id="saveStatus"
+              class="save-status"
+              aria-live="polite"
+            ></span>
+          </div>
         </div>
 
-        <div class="view-controls">
-            <button id="toggleViewBtn" onclick="toggleView()" class="secondary-btn">Switch to Board View</button>
+        <!-- Live Preview -->
+        <div
+          id="livePreview"
+          class="live-preview"
+          aria-hidden="true"
+        ></div>
+      </section>
+
+      <!-- Search & Filters -->
+      <section class="search-area">
+        <input
+          id="searchInput"
+          placeholder="Search notes by title or content..."
+        />
+
+        <div class="filters">
+          <input
+            id="filterTags"
+            placeholder="Filter by tag (comma separated)"
+          />
+
+          <select id="filterSubject">
+            <option value="">All subjects</option>
+          </select>
         </div>
 
-        <div id="notesContainer"></div>
+        <!-- Suggested Tags -->
+        <div class="suggested-tags-area">
+          <input
+            id="newTagInput"
+            placeholder="Add tag"
+          />
 
-        <div id="kanbanBoard" class="hidden">
-            <div class="kanban-column" id="todo" data-status="todo" ondrop="drop(event)" ondragover="allowDrop(event)" ondragleave="dragLeave(event)">
-                <h2>To Do</h2>
-                <div class="kanban-content"></div>
-            </div>
-            <div class="kanban-column" id="doing" data-status="doing" ondrop="drop(event)" ondragover="allowDrop(event)" ondragleave="dragLeave(event)">
-                <h2>Doing</h2>
-                <div class="kanban-content"></div>
-            </div>
-            <div class="kanban-column" id="done" data-status="done" ondrop="drop(event)" ondragover="allowDrop(event)" ondragleave="dragLeave(event)">
-                <h2>Done</h2>
-                <div class="kanban-content"></div>
-            </div>
+          <button id="addTagBtn" type="button">
+            Add Tag
+          </button>
+
+          <div
+            id="suggestedTags"
+            class="suggested-tags"
+          ></div>
         </div>
-    </div>
+      </section>
 
-    <div id="toastContainer" class="toast-container"></div>
+      <!-- View Controls -->
+      <div class="view-controls">
+        <button
+          id="toggleViewBtn"
+          onclick="toggleView()"
+          class="secondary-btn"
+        >
+          Switch to Board View
+        </button>
+      </div>
 
-<script src="script.js"></script>
+      <!-- Sort Controls -->
+      <div class="sort-controls">
+        <select id="sortOrder" onchange="sortNotes()">
+          <option value="" selected disabled>
+            Sort Alphabetically
+          </option>
+          <option value="asc">A to Z</option>
+          <option value="desc">Z to A</option>
+        </select>
+      </div>
+
+      <!-- Notes Container -->
+      <div id="notesContainer"></div>
+
+      <!-- Kanban Board -->
+      <div id="kanbanBoard" class="hidden">
+
+        <div
+          class="kanban-column"
+          id="todo"
+          data-status="todo"
+          ondrop="drop(event)"
+          ondragover="allowDrop(event)"
+          ondragleave="dragLeave(event)"
+        >
+          <h2>To Do</h2>
+          <div class="kanban-content"></div>
+        </div>
+
+        <div
+          class="kanban-column"
+          id="doing"
+          data-status="doing"
+          ondrop="drop(event)"
+          ondragover="allowDrop(event)"
+          ondragleave="dragLeave(event)"
+        >
+          <h2>Doing</h2>
+          <div class="kanban-content"></div>
+        </div>
+
+        <div
+          class="kanban-column"
+          id="done"
+          data-status="done"
+          ondrop="drop(event)"
+          ondragover="allowDrop(event)"
+          ondragleave="dragLeave(event)"
+        >
+          <h2>Done</h2>
+          <div class="kanban-content"></div>
+        </div>
+
+      </div>
+
+      <!-- Pinned Notes -->
+      <section
+        id="pinnedSection"
+        class="pinned-section"
+        aria-labelledby="pinnedHeading"
+        style="display:none;"
+      >
+        <h2 id="pinnedHeading">Pinned Notes</h2>
+        <div id="pinnedContainer"></div>
+      </section>
+
+      <!-- Favorite Notes -->
+      <section
+        id="favoritesSection"
+        class="favorites-section"
+        aria-labelledby="favoritesHeading"
+        style="display:none;"
+      >
+        <h2 id="favoritesHeading">Favorites</h2>
+        <div id="favoritesContainer"></div>
+      </section>
+
+    </main>
+
+    <!-- Footer -->
+    <footer class="site-footer">
+      <p>© 2026 Student Notes App. All rights reserved.</p>
+    </footer>
+
+  </div>
+
+  <!-- Toast Notifications -->
+  <div id="toastContainer" class="toast-container"></div>
+
+  <!-- Scripts -->
+  <script src="script.js"></script>
+
+  <!-- Markdown Renderer & Sanitizer -->
+  <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/dompurify@2.4.0/dist/purify.min.js"></script>
+
 </body>
 </html>
