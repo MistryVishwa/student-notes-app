@@ -121,6 +121,7 @@
               <option value="">Select subject</option>
             </select>
             <input id="attendanceDate" type="date" />
+
           </div>
         </div>
 
@@ -270,6 +271,15 @@
       <div id="favoritesContainer"></div>
     </section>
 
+      <!-- Minimal Recent History: shows recently opened or edited notes for quick access -->
+      <section id="recentSection" class="recent-section" aria-labelledby="recentHeading" style="display:block">
+        <h2 id="recentHeading">Recent</h2>
+        <div id="recentContainer" class="recent-container"></div>
+      </section>
+
+  </div>
+
+
     <section id="recentSection" class="recent-section" aria-labelledby="recentHeading">
       <h2 id="recentHeading">Recent</h2>
       <div id="recentContainer" class="recent-container"></div>
@@ -369,6 +379,7 @@
         });
       })();
     </script>
+
 
     <div id="toastContainer" class="toast-container"></div>
 

@@ -64,92 +64,7 @@ function saveDraft(){
     try{ localStorage.setItem(AUTO_SAVE_KEY, JSON.stringify(draft)); }catch(e){ console.warn('Failed to save draft', e); }
 }
 
-function restoreDraft(){
-    try{
-        const raw = localStorage.getItem(AUTO_SAVE_KEY);
-        if(!raw) return false;
-        const draft = JSON.parse(raw);
-        // If editor already has content, skip auto-restoring to avoid overwriting
-        const currentContent = document.getElementById('noteInput')?.value || '';
-        const currentTitle = document.getElementById('noteTitle')?.value || '';
-        if(currentContent || currentTitle) return false;
-
-        if(draft.title) document.getElementById('noteTitle').value = draft.title;
-        if(draft.content) document.getElementById('noteInput').value = draft.content;
-        if(draft.tags) document.getElementById('noteTags').value = draft.tags;
-        if(draft.subject) document.getElementById('noteSubject').value = draft.subject;
-
-        const statusEl = document.getElementById('saveStatus');
-        if(statusEl) statusEl.textContent = 'Restored draft';
-        setTimeout(()=>{ if(statusEl) statusEl.textContent = ''; }, 2000);
-        return true;
-    }catch(e){ return false; }
-}
-
-function clearDraft(){
-    try{ localStorage.removeItem(AUTO_SAVE_KEY); }catch(e){}
-}
-
-// UI state
-let searchQuery = "";
-let filterTags = [];
-let filterSubject = "";
-let globalTags = [];
-// Folder model: simple parent-relation tree
-let folders = JSON.parse(localStorage.getItem('folders')) || [];
-let currentFolder = null; // currently selected folder id (string)
-// Subjects mapping: name -> color (hex)
-let subjects = JSON.parse(localStorage.getItem('subjects')) || {};
-// Attendance mapping: subject -> [{date:'YYYY-MM-DD', status:'present'|'absent'}]
-let attendance = JSON.parse(localStorage.getItem('attendance')) || {};
-
-function saveAttendance(){ try{ localStorage.setItem('attendance', JSON.stringify(attendance)); }catch(e){} }
-
-// Assignments list: {id,title,subject,due:'YYYY-MM-DD',completed:boolean}
-let assignments = JSON.parse(localStorage.getItem('assignments')) || [];
-function saveAssignments(){ try{ localStorage.setItem('assignments', JSON.stringify(assignments)); }catch(e){} }
-
-
-const TAGS_KEY = 'allTags';
-
-function loadGlobalTags(){
-    try{ globalTags = JSON.parse(localStorage.getItem(TAGS_KEY)) || []; }catch(e){ globalTags = []; }
-}
-
-function saveGlobalTags(){
-    try{ localStorage.setItem(TAGS_KEY, JSON.stringify(globalTags)); }catch(e){}
-}
-
-function addGlobalTags(tags){
-    if(!Array.isArray(tags)) return;
-    tags.forEach(t=>{
-        const val = String(t).trim();
-        if(!val) return;
-        const exists = globalTags.some(gt=>gt.toLowerCase() === val.toLowerCase());
-        if(!exists) globalTags.push(val);
-    });
-    saveGlobalTags();
-}
-
-function renderSuggestedTags(){
-    const container = document.getElementById('suggestedTags');
-    if(!container) return;
-    // compute tag counts from notes
-    const counts = {};
-    notes.forEach(n=> (n.tags||[]).forEach(t=>{ const k=t; counts[k] = (counts[k]||0)+1 }));
-    // merge globalTags with counts, sort by count desc then name
-    const list = Array.from(new Set([].concat(globalTags, Object.keys(counts))));
-    list.sort((a,b)=> (counts[b]||0) - (counts[a]||0) || a.localeCompare(b));
-    container.innerHTML = list.map(t=>`<button type="button" class="suggested-tag" onclick="applyTagFilter(${JSON.stringify(t)})">${escapeHtml(t)}${counts[t] ? ' ('+counts[t]+')' : ''}</button>`).join(' ');
-}
-
-function applyTagFilter(tag){
-    if(!tag) return;
-    filterTags = [String(tag)];
-    const filterTagsInput = document.getElementById('filterTags');
-    if(filterTagsInput) filterTagsInput.value = tag;
-    displayNotes();
-}
+let currentView = "list"; // default view
 
 normalizeNotes();
 
@@ -190,15 +105,36 @@ function addNote() {
 
     let title = document.getElementById("noteTitle").value.trim();
     let input = document.getElementById("noteInput");
+    let titleInput = document.getElementById("noteTitle");
+    let tagsInput = document.getElementById("noteTags");
+    let subjectInput = document.getElementById("noteSubject");
+    
     let noteText = input.value.trim();
-    let tagsText = document.getElementById('noteTags').value.trim();
-    let subjectText = document.getElementById('noteSubject').value.trim();
-    let folderId = document.getElementById('noteFolder')?.value || '';
+    let titleText = titleInput.value.trim();
 
     if(noteText === ""){
         alert("Please enter a note");
         return;
     }
+
+
+    notes.push({ 
+        text: noteText, 
+        title: titleText,
+        tags: tagsInput.value,
+        subject: subjectInput.value,
+        date: "Created: " + new Date().toLocaleString() 
+    });
+
+    localStorage.setItem(
+        "notes",
+        JSON.stringify(notes)
+    );
+
+    input.value = "";
+    titleInput.value = "";
+    tagsInput.value = "";
+    subjectInput.value = "";
 
     let newNote = {
         id: Date.now(),
@@ -207,7 +143,6 @@ function addNote() {
     if (notes.some(n => n.text === noteText)) {
 
 
-    if (notes.includes(noteText)) {
 
     if(noteText === "" && titleText === ""){
         alert("Please enter a title or note content");
@@ -337,7 +272,111 @@ function displayNotes(){
             rawHtml = escapeHtml(note.content || '');
         }
 
-        const safeHtml = (window.DOMPurify && DOMPurify.sanitize) ? DOMPurify.sanitize(rawHtml) : rawHtml;
+
+
+    // Sort Logic: Pinned first, then by the selected Sort Order
+    notes.sort((a, b) => {
+        if (a.pinned !== b.pinned) return b.pinned ? 1 : -1;
+        
+        if (sortOrder === "asc") return (a.title || a.text).localeCompare(b.title || b.text);
+        if (sortOrder === "desc") return (b.title || b.text).localeCompare(a.title || a.text);
+        return 0;
+    });
+
+
+    if (notes.length === 0) {
+        container.innerHTML = `
+            <div class="empty-state">
+                <p>No notes found. Start by adding your first note above!</p>
+            </div>
+        `;
+        return;
+    }
+
+    notes.forEach((note,index)=>{
+        if (!!note.archived !== showArchived) return;
+        if (searchQuery) {
+            const matches = 
+                (note.title || "").toLowerCase().includes(searchQuery) ||
+                (note.text || "").toLowerCase().includes(searchQuery) ||
+                (note.tags || "").toLowerCase().includes(searchQuery) ||
+                (note.subject || "").toLowerCase().includes(searchQuery);
+            if (!matches) return;
+        }
+
+        const tagsHtml = note.tags ? note.tags.split(',').map(t => `<span class="note-tag">#${t.trim()}</span>`).join('') : '';
+        
+        container.innerHTML += `
+            <div class="note ${note.pinned ? 'pinned' : ''} ${note.archived ? 'archived' : ''}">
+                <div class="note-actions">
+                    <button class="icon-btn pin-btn" onclick="togglePin(${index})" title="${note.pinned ? 'Unpin' : 'Pin'}">
+                        ${note.pinned ? '📍' : '📌'}
+                    </button>
+                    <button class="icon-btn archive-btn" onclick="toggleArchive(${index})" title="${note.archived ? 'Restore' : 'Archive'}">
+                        ${note.archived ? '📥' : '📦'}
+                    </button>
+                    <button class="icon-btn edit-btn" onclick="editNote(${index})" aria-label="Edit">✎</button>
+                    <button class="icon-btn delete-btn" onclick="deleteNote(${index})" aria-label="Delete">✕</button>
+                </div>
+                ${note.title ? `<strong class="note-title">${escapeHtml(note.title)}</strong>` : ''}
+                <div class="note-text">${renderMarkdown(note.text)}</div>
+                <div class="note-footer" style="margin-top:10px">
+                    ${tagsHtml}
+                </div>
+                <div class="note-date">${note.date}</div>
+            </div>
+        `;
+    });
+}
+
+
+    // Sort Logic: Pinned first, then by the selected Sort Order
+    notes.sort((a, b) => {
+        if (a.pinned !== b.pinned) return b.pinned ? 1 : -1;
+        
+        if (sortOrder === "asc") return (a.title || a.text).localeCompare(b.title || b.text);
+        if (sortOrder === "desc") return (b.title || b.text).localeCompare(a.title || a.text);
+        return 0;
+    });
+
+
+    if (notes.length === 0) {
+        container.innerHTML = `
+            <div class="empty-state">
+                <p>No notes found. Start by adding your first note above!</p>
+            </div>
+        `;
+        return;
+    }
+
+    notes.forEach((note,index)=>{
+        if (!!note.archived !== showArchived) return;
+        if (searchQuery && !note.title.toLowerCase().includes(searchQuery) && !note.text.toLowerCase().includes(searchQuery)) return;
+
+        const tagsHtml = note.tags ? note.tags.split(',').map(t => `<span class="note-tag">#${t.trim()}</span>`).join('') : '';
+        
+        container.innerHTML += `
+            <div class="note ${note.pinned ? 'pinned' : ''} ${note.archived ? 'archived' : ''}">
+                <div class="note-actions">
+                    <button class="icon-btn pin-btn" onclick="togglePin(${index})" title="${note.pinned ? 'Unpin' : 'Pin'}">
+                        ${note.pinned ? '📍' : '📌'}
+                    </button>
+                    <button class="icon-btn archive-btn" onclick="toggleArchive(${index})" title="${note.archived ? 'Restore' : 'Archive'}">
+                        ${note.archived ? '📥' : '📦'}
+                    </button>
+                    <button class="icon-btn edit-btn" onclick="editNote(${index})" aria-label="Edit">✎</button>
+                    <button class="icon-btn delete-btn" onclick="deleteNote(${index})" aria-label="Delete">✕</button>
+                </div>
+                ${note.title ? `<strong class="note-title">${escapeHtml(note.title)}</strong>` : ''}
+                <div class="note-text">${renderMarkdown(note.text)}</div>
+                <div class="note-footer" style="margin-top:10px">
+                    ${tagsHtml}
+                </div>
+                <div class="note-date">${note.date}</div>
+            </div>
+        `;
+    });
+}
 
 
     // Sort Logic: Pinned first, then by the selected Sort Order

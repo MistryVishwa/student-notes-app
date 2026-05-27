@@ -227,6 +227,11 @@ body{
     color: var(--primary-text);
     border-color: var(--primary-bg);
 
+.input-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr 1fr;
+    gap: 12px;
+    margin-top: 12px;
 h1{
     text-align:center;
 }
@@ -583,6 +588,7 @@ button:hover {
     border: 1px solid #E5E7EB;
     box-shadow: var(--shadow-sm);
     transition: all 0.3s ease;
+
 }
 
 .secondary-btn:hover {
