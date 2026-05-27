@@ -29,6 +29,11 @@
 
     <!-- Header -->
     <header class="site-header">
+        <h1><img src="https://cdn-icons-png.flaticon.com/512/7235/7235470.png" alt="note" width="50" height="50">Student Notes App</h1>
+        
+
+    </header>
+
       <h1>Student Notes App</h1>
     </header>
 
@@ -200,25 +205,8 @@
           </div>
         </div>
       </aside>
+      
 
-
-      <div class="content-area">
-        <section class="editor-section">
-          <input id="noteTitle" class="title-input" placeholder="Note Title (optional)" />
-          <textarea id="noteInput" placeholder="Write your note here... (Markdown supported)"></textarea>
-          
-          <div class="input-grid">
-            <div class="tags-input-container">
-              <input id="noteTags" placeholder="Tags (e.g. exam, lab)" />
-              <div class="quick-tags">
-                <button type="button" class="tag-pill" onclick="addQuickTag('Study')">Study</button>
-                <button type="button" class="tag-pill" onclick="addQuickTag('Assignment')">Assignment</button>
-                <button type="button" class="tag-pill" onclick="addQuickTag('Revision')">Revision</button>
-              </div>
-            </div>
-            <input id="noteSubject" placeholder="Subject" />
-            <select id="noteFolder">
-              <option value="">No folder</option>
 
       <div class="input-area">
         <input id="noteTitle" placeholder="Title (optional)" />
@@ -416,31 +404,16 @@
   </div>
 
 
-    <!-- Footer -->
-    <footer class="site-footer">
-      <p>© 2026 Student Notes App. All rights reserved.</p>
-    </footer>
-        <div class="view-controls">
-            <button id="toggleViewBtn" onclick="toggleView()" class="secondary-btn">Switch to Board View</button>
-        </div>
+    
 
-        <div id="notesContainer"></div>
-
-        <div id="kanbanBoard" class="hidden">
-            <div class="kanban-column" id="todo" data-status="todo" ondrop="drop(event)" ondragover="allowDrop(event)" ondragleave="dragLeave(event)">
-                <h2>To Do</h2>
-                <div class="kanban-content"></div>
-            </div>
-            <div class="kanban-column" id="doing" data-status="doing" ondrop="drop(event)" ondragover="allowDrop(event)" ondragleave="dragLeave(event)">
-                <h2>Doing</h2>
-                <div class="kanban-content"></div>
-            </div>
-            <div class="kanban-column" id="done" data-status="done" ondrop="drop(event)" ondragover="allowDrop(event)" ondragleave="dragLeave(event)">
-                <h2>Done</h2>
-                <div class="kanban-content"></div>
-            </div>
-        </div>
+    <div class="sort-controls">
+      <select id="sortOrder" onchange="sortNotes()">
+        <option value="" selected disabled>Sort Alphabetically</option>
+        <option value="asc">A to Z</option>
+        <option value="desc">Z to A</option>
+      </select>
     </div>
+
     <div class="view-controls" style="display: flex; justify-content: flex-end; margin-bottom: 20px;">
         <button id="toggleViewBtn" onclick="toggleView()" class="secondary-btn" style="padding: 8px 16px; border-radius: 8px; border: 1px solid #ccc; background: #fff; cursor: pointer;">Switch to Board View</button>
     <div class="view-controls">
@@ -476,6 +449,191 @@
       <h2 id="favoritesHeading">Favorites</h2>
       <div id="favoritesContainer"></div>
     </section>
+      <!-- Minimal Recent History: shows recently opened or edited notes for quick access -->
+      <section id="recentSection" class="recent-section" aria-labelledby="recentHeading" style="display:block">
+        <h2 id="recentHeading">Recent</h2>
+        <div id="recentContainer" class="recent-container"></div>
+      </section>
+  </div>
+  <!-- =========================================================
+TASK REWARD SYSTEM
+
+<section class="reward-section">
+
+  <div class="reward-header">
+
+    <span class="reward-label">
+      ACHIEVEMENTS
+    </span>
+
+    <h2>
+      Daily Task Progress
+    </h2>
+
+    <p>
+      Complete all tasks to unlock your reward.
+    </p>
+
+  </div>
+
+  <!-- TASK LIST -->
+
+  <div class="task-list">
+
+    <label class="task-item">
+
+      <input type="checkbox" class="task-checkbox">
+
+      <span>
+        Complete Java Practice
+      </span>
+
+    </label>
+
+    <label class="task-item">
+
+      <input type="checkbox" class="task-checkbox">
+
+      <span>
+        Revise Notes
+      </span>
+
+    </label>
+
+    <label class="task-item">
+
+      <input type="checkbox" class="task-checkbox">
+
+      <span>
+        Finish Assignment
+      </span>
+
+    </label>
+
+    <label class="task-item">
+
+      <input type="checkbox" class="task-checkbox">
+
+      <span>
+        Push GitHub Contribution
+      </span>
+
+    </label>
+
+  </div>
+
+  <!-- PROGRESS -->
+
+  <div class="progress-wrapper">
+
+    <div class="progress-bar">
+
+      <div class="progress-fill" id="progressFill"></div>
+
+    </div>
+
+    <span id="progressText">
+      0% Completed
+    </span>
+
+  </div>
+
+  <!-- REWARD CARD -->
+
+  <div class="reward-card" id="rewardCard">
+
+    <img
+      src="https://www.shutterstock.com/image-vector/triumphant-business-team-holding-large-260nw-2766355177.jpg"
+      alt="Reward"
+    >
+
+    <div class="reward-overlay">
+
+      <div class="reward-content">
+
+        <h3>
+          Congratulations 🎉
+        </h3>
+
+        <p>
+          You completed all your tasks today.
+        </p>
+
+        <button>
+          Claim Reward
+        </button>
+
+      </div>
+
+    </div>
+
+  </div>
+
+</section>
+
+<script>
+
+const checkboxes =
+document.querySelectorAll(".task-checkbox");
+
+const progressFill =
+document.getElementById("progressFill");
+
+const progressText =
+document.getElementById("progressText");
+
+const rewardCard =
+document.getElementById("rewardCard");
+
+function updateProgress(){
+
+  const total =
+  checkboxes.length;
+
+  const checked =
+  document.querySelectorAll(
+    ".task-checkbox:checked"
+  ).length;
+
+  const percent =
+  (checked / total) * 100;
+
+  progressFill.style.width =
+  percent + "%";
+
+  progressText.innerText =
+  Math.round(percent) +
+  "% Completed";
+
+  if(percent === 100){
+
+    rewardCard.classList.add("show-reward");
+
+  }
+
+  else{
+
+    rewardCard.classList.remove(
+      "show-reward"
+    );
+
+  }
+
+}
+
+checkboxes.forEach((checkbox)=>{
+
+  checkbox.addEventListener(
+    "change",
+    updateProgress
+  );
+
+});
+</script>
+<footer class="site-footer">
+        <p>© 2026 Student Notes App. All rights reserved.</p>
+    </footer>
+  <div id="toastContainer" class="toast-container"></div>
 
       <!-- Minimal Recent History: shows recently opened or edited notes for quick access -->
       <section id="recentSection" class="recent-section" aria-labelledby="recentHeading" style="display:block">
