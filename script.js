@@ -24,6 +24,9 @@ notes = notes.map((note, index) => {
 localStorage.setItem("notes", JSON.stringify(notes));
 let currentView = "list";
 const THEME_KEY = "theme";
+const AUTO_SAVE_KEY = "draft";
+const AUTO_SAVE_DELAY = 2000;
+const TAGS_KEY = "allTags";
 
 
 let currentView = "list"; // default view
@@ -38,75 +41,11 @@ const THEME_KEY = "theme";
 const AUTO_SAVE_KEY = 'draft';
 const AUTO_SAVE_DELAY = 2000; // ms of inactivity before saving
 let autoSaveTimer = null;
-
-// UI state
 let searchQuery = "";
 let filterTags = [];
 let filterSubject = "";
 let globalTags = [];
-const TAGS_KEY = 'allTags';
-
-// Initialize application data flow
-normalizeNotes();
-
-// ==========================================
-// Core Functions: Auto-save & Drafts
-// ==========================================
-function scheduleAutoSave(){
-    const statusEl = document.getElementById('saveStatus');
-    if(statusEl) statusEl.textContent = 'Saving...';
-    if(autoSaveTimer) clearTimeout(autoSaveTimer);
-    autoSaveTimer = setTimeout(()=>{
-        saveDraft();
-        if(statusEl) {
-            statusEl.textContent = 'Saved';
-            setTimeout(()=>{ if(statusEl) statusEl.textContent = ''; }, 2000);
-        }
-        autoSaveTimer = null;
-    }, AUTO_SAVE_DELAY);
-}
-
-function saveDraft(){
-    const title = document.getElementById('noteTitle')?.value || '';
-    const content = document.getElementById('noteInput')?.value || '';
-    const tags = document.getElementById('noteTags')?.value || '';
-    const subject = document.getElementById('noteSubject')?.value || '';
-
-    const draft = { title, content, tags, subject, savedAt: Date.now() };
-    try{ localStorage.setItem(AUTO_SAVE_KEY, JSON.stringify(draft)); }catch(e){ console.warn('Failed to save draft', e); }
-}
-
-function restoreDraft(){
-    try{
-        const raw = localStorage.getItem(AUTO_SAVE_KEY);
-        if(!raw) return false;
-        const draft = JSON.parse(raw);
-        
-        const currentContent = document.getElementById('noteInput')?.value || '';
-        const currentTitle = document.getElementById('noteTitle')?.value || '';
-        if(currentContent || currentTitle) return false;
-
-        if(draft.title) document.getElementById('noteTitle').value = draft.title;
-        if(draft.content) document.getElementById('noteInput').value = draft.content;
-        if(draft.tags) document.getElementById('noteTags').value = draft.tags;
-        if(draft.subject) document.getElementById('noteSubject').value = draft.subject;
-
-        const statusEl = document.getElementById('saveStatus');
-        if(statusEl) statusEl.textContent = 'Restored draft';
-        setTimeout(()=>{ if(statusEl) statusEl.textContent = ''; }, 2000);
-        return true;
-    }catch(e){ return false; }
-}
-
-function clearDraft(){
-    try{ localStorage.removeItem(AUTO_SAVE_KEY); }catch(e){}
-}
-
-// UI state
-let searchQuery = "";
-let filterTags = [];
-let filterSubject = "";
-let globalTags = [];
+let currentView = "list";
 // Folder model: simple parent-relation tree
 let folders = JSON.parse(localStorage.getItem('folders')) || [];
 let currentFolder = null; // currently selected folder id (string)
@@ -122,63 +61,28 @@ let assignments = JSON.parse(localStorage.getItem('assignments')) || [];
 function saveAssignments(){ try{ localStorage.setItem('assignments', JSON.stringify(assignments)); }catch(e){} }
 
 
-const TAGS_KEY = 'allTags';
-
-// ==========================================
-// Tag Management & Recommendations
-// ==========================================
-function loadGlobalTags(){
-    try{ globalTags = JSON.parse(localStorage.getItem(TAGS_KEY)) || []; }catch(e){ globalTags = []; }
-}
-
-function saveGlobalTags(){
-    try{ localStorage.setItem(TAGS_KEY, JSON.stringify(globalTags)); }catch(e){}
-}
-
-function addGlobalTags(tags){
-    if(!Array.isArray(tags)) return;
-    tags.forEach(t=>{
-        const val = String(t).trim();
-        if(!val) return;
-        const exists = globalTags.some(gt=>gt.toLowerCase() === val.toLowerCase());
-        if(!exists) globalTags.push(val);
-    });
-    saveGlobalTags();
-}
-
-function renderSuggestedTags(){
-    const container = document.getElementById('suggestedTags');
-    if(!container) return;
-    const counts = {};
-    notes.forEach(n=> (n.tags||[]).forEach(t=>{ counts[t] = (counts[t]||0)+1 }));
-    const list = Array.from(new Set([].concat(globalTags, Object.keys(counts))));
-    list.sort((a,b)=> (counts[b]||0) - (counts[a]||0) || a.localeCompare(b));
-    container.innerHTML = list.map(t=>`<button type="button" class="suggested-tag" onclick="applyTagFilter(${JSON.stringify(t)})">${escapeHtml(t)}${counts[t] ? ' ('+counts[t]+')' : ''}</button>`).join(' ');
-}
-
-function applyTagFilter(tag){
-    if(!tag) return;
-    filterTags = [String(tag)];
-    const filterTagsInput = document.getElementById('filterTags');
-    if(filterTagsInput) filterTagsInput.value = tag;
-    displayNotes();
-}
-
-function normalizeNotes(){
-    notes = notes.map(n => {
-        if(typeof n === 'string'){
-            const lines = n.split('\n').map(l=>l.trim()).filter(Boolean);
+// Normalize old notes
+function normalizeNotes() {
+    notes = notes.map((n, index) => {
+        if (typeof n === "string") {
             return {
-                id: Date.now() + Math.floor(Math.random()*1000),
-                title: lines[0] || '',
-                content: lines.slice(1).join('\n') || lines[0] || '',
+                id: Date.now() + index,
+                title: "",
+                content: n,
                 tags: [],
-                subject: '',
+                subject: "",
                 pinned: false,
-                favorite: false
+                favorite: false,
+                status: "todo"
             };
         }
+
         return {
+            id: n.id || Date.now() + index,
+            title: n.title || "",
+            content: n.content || "",
+            tags: Array.isArray(n.tags) ? n.tags : [],
+            subject: n.subject || "",
             id: n.id || (Date.now() + Math.floor(Math.random()*1000)),
             title: n.title || '',
             content: n.content || '',
@@ -186,15 +90,17 @@ function normalizeNotes(){
             tags: Array.isArray(n.tags) ? n.tags : (n.tags ? String(n.tags).split(',').map(s=>s.trim()).filter(Boolean) : []),
             subject: n.subject || '',
             pinned: !!n.pinned,
-            favorite: !!n.favorite
+            favorite: !!n.favorite,
+            status: n.status || "todo"
         };
     });
 
-    localStorage.setItem('notes', JSON.stringify(notes));
-    loadGlobalTags();
-    notes.forEach(n=> addGlobalTags(n.tags||[]));
+    localStorage.setItem("notes", JSON.stringify(notes));
 }
 
+normalizeNotes();
+displayNotes();
+initTheme();
 
 function toggleView() {
     currentView = currentView === "list" ? "board" : "list";
@@ -230,13 +136,16 @@ function addNote() {
     const titleText = titleInput.value.trim();
 
     let title = document.getElementById("noteTitle").value.trim();
-    let noteInputEl = document.getElementById("noteInput");
-    let noteText = noteInputEl.value.trim();
+    let noteText = document.getElementById("noteInput").value.trim();
+    let tagsText = document.getElementById("noteTags").value.trim();
+    let subjectText = document.getElementById("noteSubject").value.trim();
+    let input = document.getElementById("noteInput");
+    let noteText = input.value.trim();
     let tagsText = document.getElementById('noteTags').value.trim();
     let subjectText = document.getElementById('noteSubject').value.trim();
     let folderId = document.getElementById('noteFolder')?.value || '';
 
-    if(noteText === ""){
+    if (!noteText) {
         alert("Please enter a note");
         return;
     }
@@ -300,8 +209,15 @@ function addNote() {
 
     const newNote = {
         id: Date.now(),
-        title: title,
+        title,
         content: noteText,
+        tags: tagsText
+            ? tagsText.split(",").map(t => t.trim()).filter(Boolean)
+            : [],
+        subject: subjectText,
+        pinned: false,
+        favorite: false,
+        status: "todo"
         tags: tagsText ? tagsText.split(',').map(t=>t.trim()).filter(Boolean) : [],
         subject: subjectText || '',
         folderId: folderId || '',
@@ -311,6 +227,7 @@ function addNote() {
         status: 'todo'
     };
 
+    notes.unshift(newNote);
     notes.push(newNote);
 
         pinned: false,
@@ -321,6 +238,12 @@ function addNote() {
     localStorage.setItem("notes", JSON.stringify(notes));
     input.value = "";
 
+    document.getElementById("noteTitle").value = "";
+    document.getElementById("noteInput").value = "";
+    document.getElementById("noteTags").value = "";
+    document.getElementById("noteSubject").value = "";
+
+    clearDraft();
     document.getElementById('noteTitle').value = '';
     noteInputEl.value = '';
     document.getElementById('noteTags').value = '';
@@ -331,8 +254,17 @@ function addNote() {
     // record new note in recent history and refresh UI
     try{ recordRecent(newNote); }catch(e){}
     refreshFilters();
+    renderSuggestedTags();
     displayNotes();
-    clearDraft();
+}
+
+function displayNotes() {
+
+    if (currentView === "board") {
+        renderKanban();
+        return;
+    }
+    // update global tags list and suggestions
     addGlobalTags(newNote.tags);
     renderSuggestedTags();
 
@@ -342,35 +274,19 @@ function addNote() {
 function displayNotes(){
     const sortedNotes = [...notes].sort((a, b) => (b.pinned ? 1 : 0) - (a.pinned ? 1 : 0));
     let container = document.getElementById("notesContainer");
-    let pinnedContainer = document.getElementById('pinnedContainer');
-    const pinnedSection = document.getElementById('pinnedSection');
-    let favoritesContainer = document.getElementById('favoritesContainer');
-    const favoritesSection = document.getElementById('favoritesSection');
-
-    if(!container) return;
+    let pinnedContainer = document.getElementById("pinnedContainer");
+    let favoritesContainer = document.getElementById("favoritesContainer");
 
     container.innerHTML = "";
-    if(pinnedContainer) pinnedContainer.innerHTML = "";
-    if(favoritesContainer) favoritesContainer.innerHTML = "";
+    pinnedContainer.innerHTML = "";
+    favoritesContainer.innerHTML = "";
 
-    if (notes.length === 0) {
-        container.innerHTML = `
-            <div class="empty-state">
-                <p>No notes found. Start by adding your first note above!</p>
-            </div>
-        `;
-        if(pinnedSection) pinnedSection.style.display = 'none';
-        if(favoritesSection) favoritesSection.style.display = 'none';
-        return;
-    }
+    const q = searchQuery.toLowerCase();
 
-    const q = searchQuery.trim();
-    const tagsFilter = filterTags.map(t=>t.toLowerCase());
-    const subjectFilter = filterSubject.toLowerCase();
+    notes.forEach(note => {
 
-    const favoritesContainer = document.getElementById('favoritesContainer');
-    const favoritesSection = document.getElementById('favoritesSection');
-
+        const combined =
+            (note.title + " " + note.content).toLowerCase();
     const sortedNotes = [...notes].sort((a, b) => (b.pinned ? 1 : 0) - (a.pinned ? 1 : 0));
 
     if (currentView === "board") {
@@ -386,16 +302,21 @@ function displayNotes(){
     notes.forEach((note)=>{
         const combined = (note.title + ' ' + note.content).toLowerCase();
 
-        if(q && !combined.includes(q.toLowerCase())) return;
+        if (q && !combined.includes(q)) return;
 
-        if(tagsFilter.length){
-            const noteTags = (note.tags || []).map(t=>t.toLowerCase());
-            const hasTag = tagsFilter.every(t=>noteTags.includes(t));
-            if(!hasTag) return;
-        }
+        const noteHtml = `
+            <div class="note" draggable="true"
+                ondragstart="dragStart(event, ${note.id})">
 
-        if(subjectFilter && (note.subject || '').toLowerCase() !== subjectFilter) return;
+                <button class="favorite-btn"
+                    onclick="toggleFavorite('${note.id}')">
+                    ${note.favorite ? "★" : "☆"}
+                </button>
 
+                <button class="pin-btn"
+                    onclick="togglePin('${note.id}')">
+                    ${note.pinned ? "Unpin" : "Pin"}
+                </button>
         // Filter by folder (include descendants)
         if(currentFolder){
             const allowed = getDescendantFolderIds(currentFolder).concat([String(currentFolder)]);
@@ -415,168 +336,41 @@ function displayNotes(){
             rawHtml = escapeHtml(note.content || '');
         }
 
+                ${note.title
+                    ? `<div class="note-title">${escapeHtml(note.title)}</div>`
+                    : ""}
 
+                <div class="note-content">
+                    ${escapeHtml(note.content)}
+                </div>
 
-    // Sort Logic: Pinned first, then by the selected Sort Order
-    notes.sort((a, b) => {
-        if (a.pinned !== b.pinned) return b.pinned ? 1 : -1;
-        
-        if (sortOrder === "asc") return (a.title || a.text).localeCompare(b.title || b.text);
-        if (sortOrder === "desc") return (b.title || b.text).localeCompare(a.title || a.text);
-        return 0;
-    });
+                ${note.subject
+                    ? `<div class="note-subject">
+                        Subject: ${escapeHtml(note.subject)}
+                    </div>`
+                    : ""}
 
-
-    if (notes.length === 0) {
-        container.innerHTML = `
-            <div class="empty-state">
-                <p>No notes found. Start by adding your first note above!</p>
-            </div>
-        `;
-        return;
-    }
+                ${(note.tags || []).length
+                    ? `<div class="note-tags">
+                        ${note.tags.map(
+                            t => `<span class="tag">${escapeHtml(t)}</span>`
+                        ).join("")}
+                    </div>`
+                    : ""}
 
     notes.forEach((note,index)=>{
-        if (!!note.archived !== showArchived) return;
-        if (searchQuery) {
-            const matches = 
-                (note.title || "").toLowerCase().includes(searchQuery) ||
-                (note.text || "").toLowerCase().includes(searchQuery) ||
-                (note.tags || "").toLowerCase().includes(searchQuery) ||
-                (note.subject || "").toLowerCase().includes(searchQuery);
-            if (!matches) return;
-        }
-
-        const tagsHtml = note.tags ? note.tags.split(',').map(t => `<span class="note-tag">#${t.trim()}</span>`).join('') : '';
-        
         container.innerHTML += `
-            <div class="note ${note.pinned ? 'pinned' : ''} ${note.archived ? 'archived' : ''}">
-                <div class="note-actions">
-                    <button class="icon-btn pin-btn" onclick="togglePin(${index})" title="${note.pinned ? 'Unpin' : 'Pin'}">
-                        ${note.pinned ? '📍' : '📌'}
-                    </button>
-                    <button class="icon-btn archive-btn" onclick="toggleArchive(${index})" title="${note.archived ? 'Restore' : 'Archive'}">
-                        ${note.archived ? '📥' : '📦'}
-                    </button>
-                    <button class="icon-btn edit-btn" onclick="editNote(${index})" aria-label="Edit">✎</button>
-                    <button class="icon-btn delete-btn" onclick="deleteNote(${index})" aria-label="Delete">✕</button>
-                </div>
-                ${note.title ? `<strong class="note-title">${escapeHtml(note.title)}</strong>` : ''}
-                <div class="note-text">${renderMarkdown(note.text)}</div>
-                <div class="note-footer" style="margin-top:10px">
-                    ${tagsHtml}
-                </div>
+            <div class="note">
+                <div class="note-text">${escapeHtml(note.text)}</div>
                 <div class="note-date">${note.date}</div>
-            </div>
-        `;
-    });
-}
-
-
-    // Sort Logic: Pinned first, then by the selected Sort Order
-    notes.sort((a, b) => {
-        if (a.pinned !== b.pinned) return b.pinned ? 1 : -1;
-        
-        if (sortOrder === "asc") return (a.title || a.text).localeCompare(b.title || b.text);
-        if (sortOrder === "desc") return (b.title || b.text).localeCompare(a.title || a.text);
-        return 0;
-    });
-
-
-    if (notes.length === 0) {
-        container.innerHTML = `
-            <div class="empty-state">
-                <p>No notes found. Start by adding your first note above!</p>
-            </div>
-        `;
-        return;
-    }
-
-    notes.forEach((note,index)=>{
-        if (!!note.archived !== showArchived) return;
-        if (searchQuery && !note.title.toLowerCase().includes(searchQuery) && !note.text.toLowerCase().includes(searchQuery)) return;
-
-        const tagsHtml = note.tags ? note.tags.split(',').map(t => `<span class="note-tag">#${t.trim()}</span>`).join('') : '';
-        
-        container.innerHTML += `
-            <div class="note ${note.pinned ? 'pinned' : ''} ${note.archived ? 'archived' : ''}">
-                <div class="note-actions">
-                    <button class="icon-btn pin-btn" onclick="togglePin(${index})" title="${note.pinned ? 'Unpin' : 'Pin'}">
-                        ${note.pinned ? '📍' : '📌'}
-                    </button>
-                    <button class="icon-btn archive-btn" onclick="toggleArchive(${index})" title="${note.archived ? 'Restore' : 'Archive'}">
-                        ${note.archived ? '📥' : '📦'}
-                    </button>
-                    <button class="icon-btn edit-btn" onclick="editNote(${index})" aria-label="Edit">✎</button>
-                    <button class="icon-btn delete-btn" onclick="deleteNote(${index})" aria-label="Delete">✕</button>
-                </div>
-                ${note.title ? `<strong class="note-title">${escapeHtml(note.title)}</strong>` : ''}
-                <div class="note-text">${renderMarkdown(note.text)}</div>
-                <div class="note-footer" style="margin-top:10px">
-                    ${tagsHtml}
-                </div>
-                <div class="note-date">${note.date}</div>
-            </div>
-        `;
-    });
-}
-
-
-    // Sort Logic: Pinned first, then by the selected Sort Order
-    notes.sort((a, b) => {
-        if (a.pinned !== b.pinned) return b.pinned ? 1 : -1;
-        
-        if (sortOrder === "asc") return (a.title || a.text).localeCompare(b.title || b.text);
-        if (sortOrder === "desc") return (b.title || b.text).localeCompare(a.title || a.text);
-        return 0;
-    });
-
-
-    if (notes.length === 0) {
-        container.innerHTML = `
-            <div class="empty-state">
-                <p>No notes found. Start by adding your first note above!</p>
-            </div>
-        `;
-        return;
-    }
-
-    notes.forEach((note,index)=>{
-        if (!!note.archived !== showArchived) return;
-        if (searchQuery) {
-            const matches = 
-                (note.title || "").toLowerCase().includes(searchQuery) ||
-                (note.text || "").toLowerCase().includes(searchQuery) ||
-                (note.tags || "").toLowerCase().includes(searchQuery) ||
-                (note.subject || "").toLowerCase().includes(searchQuery);
-            if (!matches) return;
-        }
-
-        const tagsHtml = note.tags ? note.tags.split(',').map(t => `<span class="note-tag">#${t.trim()}</span>`).join('') : '';
-        
-        container.innerHTML += `
-            <div class="note ${note.pinned ? 'pinned' : ''} ${note.archived ? 'archived' : ''}">
-                <div class="note-actions">
-                    <button class="icon-btn pin-btn" onclick="togglePin(${index})" title="${note.pinned ? 'Unpin' : 'Pin'}">
-                        ${note.pinned ? '📍' : '📌'}
-                    </button>
-                    <button class="icon-btn archive-btn" onclick="toggleArchive(${index})" title="${note.archived ? 'Restore' : 'Archive'}">
-                        ${note.archived ? '📥' : '📦'}
-                    </button>
-                    <button class="icon-btn edit-btn" onclick="editNote(${index})" aria-label="Edit">✎</button>
-                    <button class="icon-btn delete-btn" onclick="deleteNote(${index})" aria-label="Delete">✕</button>
-                </div>
-                ${note.title ? `<strong class="note-title">${escapeHtml(note.title)}</strong>` : ''}
-                <div class="note-text">${renderMarkdown(note.text)}</div>
-                <div class="note-footer" style="margin-top:10px">
-                    ${tagsHtml}
-                </div>
-                <div class="note-date">${note.date}</div>
-            </div>
-        `;
-    });
-}
-
+                <button class="edit-btn"
+                onclick="editNote(${index})" aria-label="Edit note">
+                Edit
+                </button>
+                <button class="delete-btn"
+                    onclick="deleteNote('${note.id}')">
+                    X
+                </button>
 
         // Use a temporary element to perform text-node highlighting
         const tmp = document.createElement('div');
@@ -623,6 +417,10 @@ function displayNotes(){
             </div>
         `;
 
+        if (note.favorite) {
+            favoritesContainer.innerHTML += noteHtml;
+        } else if (note.pinned) {
+            pinnedContainer.innerHTML += noteHtml;
         if (currentView === 'board') {
             let containerId = note.status === 'doing' ? '#doing' : note.status === 'done' ? '#done' : '#todo';
             let kCont = document.querySelector(`${containerId} .kanban-content`);
@@ -642,7 +440,51 @@ function displayNotes(){
             }
         }
     });
+}
 
+function renderKanban() {
+
+    const todoContainer =
+        document.querySelector("#todo .kanban-content");
+
+    const doingContainer =
+        document.querySelector("#doing .kanban-content");
+
+    const doneContainer =
+        document.querySelector("#done .kanban-content");
+
+    todoContainer.innerHTML = "";
+    doingContainer.innerHTML = "";
+    doneContainer.innerHTML = "";
+
+    notes.forEach(note => {
+
+        const html = `
+            <div class="note"
+                draggable="true"
+                ondragstart="dragStart(event, ${note.id})">
+
+                ${escapeHtml(note.title || note.content)}
+
+                <button class="delete-btn"
+                    onclick="deleteNote('${note.id}')">
+                    X
+                </button>
+            </div>
+        `;
+
+        if (note.status === "todo") {
+            todoContainer.innerHTML += html;
+        } else if (note.status === "doing") {
+            doingContainer.innerHTML += html;
+        } else {
+            doneContainer.innerHTML += html;
+        }
+    });
+}
+
+function deleteNote(id) {
+    notes = notes.filter(n => String(n.id) !== String(id));
     if (currentView === "list") {
         let container = document.getElementById("notesContainer");
         container.innerHTML = "";
@@ -742,45 +584,91 @@ function sortNotes() {
         notes.sort((a, b) => (b.title || b.content).localeCompare(a.title || a.content));
     }
     localStorage.setItem("notes", JSON.stringify(notes));
+
     displayNotes();
 }
 
-// ==========================================
-// Search Highlight Helpers & Security
-// ==========================================
-function highlightInElement(element, query){
-    if(!query) return;
-    const q = String(query).trim();
-    if(!q) return;
-    const re = new RegExp(q.replace(/[.*+?^${}()|[\]\\]/g,'\\$&'), 'ig');
+function togglePin(id) {
+    const note = notes.find(n => String(n.id) === String(id));
 
-    const walker = document.createTreeWalker(element, NodeFilter.SHOW_TEXT, null, false);
-    const nodes = [];
-    while(walker.nextNode()) nodes.push(walker.currentNode);
+    if (!note) return;
 
-    nodes.forEach(textNode => {
-        const parent = textNode.parentNode;
-        if(!parent) return;
-        const text = textNode.nodeValue;
-        if(!re.test(text)) return;
-        const frag = document.createDocumentFragment();
-        let lastIndex = 0;
-        text.replace(re, (match, offset) => {
-            const before = text.slice(lastIndex, offset);
-            if(before) frag.appendChild(document.createTextNode(before));
-            const mark = document.createElement('mark');
-            mark.className = 'highlight';
-            mark.textContent = match;
-            frag.appendChild(mark);
-            lastIndex = offset + match.length;
-            return match;
-        });
-        const after = text.slice(lastIndex);
-        if(after) frag.appendChild(document.createTextNode(after));
-        parent.replaceChild(frag, textNode);
-    });
+    note.pinned = !note.pinned;
+
+    localStorage.setItem("notes", JSON.stringify(notes));
+
+    displayNotes();
 }
 
+function toggleFavorite(id) {
+    const note = notes.find(n => String(n.id) === String(id));
+
+    if (!note) return;
+
+    note.favorite = !note.favorite;
+
+    localStorage.setItem("notes", JSON.stringify(notes));
+
+    displayNotes();
+}
+
+function toggleView() {
+
+    currentView =
+        currentView === "list"
+            ? "board"
+            : "list";
+
+    let btn = document.getElementById("toggleViewBtn");
+// Import and append unique notes from a structural JSON file
+function importNotes(event) {
+    const file = event.target.files[0];
+    if (!file) return;
+
+    const reader = new FileReader();
+    reader.onload = function(e) {
+        try {
+            const importedData = JSON.parse(e.target.result);
+
+            // Validation Guardrail: Ensure parsed file content is a valid Array
+            if (Array.isArray(importedData)) {
+                
+                // Advanced Tip: Filter out notes that already exist in the app to prevent duplicates
+                const uniqueImportedData = importedData.filter(importedNote => {
+                    // If the imported note is an object (in case the schema changes later)
+                    if (typeof importedNote === 'object' && importedNote !== null) {
+                        return !notes.some(existingNote => 
+                            typeof existingNote === 'object' && existingNote !== null 
+                            ? existingNote.text === importedNote.text 
+                            : existingNote === importedNote.text
+                        );
+                    }
+                    // Standard string matching for the current codebase setup
+                    return !notes.includes(importedNote);
+                });
+
+                if (uniqueImportedData.length === 0) {
+                    alert("All notes in this backup are already present in your app!");
+                    event.target.value = '';
+                    return;
+                }
+
+                const userConfirmation = confirm(`Found ${uniqueImportedData.length} new unique notes. Do you want to add them to your existing notes?`);
+                
+                if (userConfirmation) {
+                    // Combine existing notes with the unique imported ones
+                    notes = [...notes, ...uniqueImportedData];
+                    
+                    localStorage.setItem("notes", JSON.stringify(notes));
+                    displayNotes();
+                    alert("New notes imported and added successfully!");
+                }
+            } else {
+                alert("Import failed: JSON structure must be a valid array list.");
+            }
+        } catch (error) {
+            alert("Error parsing backup file. Please ensure it is a valid, uncorrupted .json file.");
+        }
 function deleteNote(id){
     notes = notes.filter(n => n.id !== id);
     localStorage.setItem("notes", JSON.stringify(notes));
@@ -861,27 +749,19 @@ function refreshFilters(){
     renderAttendancePanel();
 }
 
-// ==========================================
-// Application & Theme Setup Event Observers
-// ==========================================
-document.addEventListener('DOMContentLoaded', () => {
-    const searchInput = document.getElementById('searchInput');
-    const filterTagsInput = document.getElementById('filterTags');
-    const filterSubjectSelect = document.getElementById('filterSubject');
-    const livePreviewToggle = document.getElementById('livePreviewToggle');
-    const livePreview = document.getElementById('livePreview');
-    const noteInput = document.getElementById('noteInput');
-    const titleInput = document.getElementById('noteTitle');
-    const tagsInput = document.getElementById('noteTags');
-    const subjectInput = document.getElementById('noteSubject');
+    btn.innerText =
+        currentView === "list"
+            ? "Switch to Board View"
+            : "Switch to List View";
 
-    if(searchInput){
-        searchInput.addEventListener('input', (e)=>{
-            searchQuery = e.target.value;
-            displayNotes();
-        });
-    }
+    document.getElementById("notesContainer")
+        .classList.toggle("hidden");
 
+    document.getElementById("kanbanBoard")
+        .classList.toggle("hidden");
+
+    displayNotes();
+}
     if(filterTagsInput){
         filterTagsInput.addEventListener('input', (e)=>{
             const txt = e.target.value.trim();
@@ -1001,6 +881,103 @@ document.addEventListener('DOMContentLoaded', () => {
                 livePreview.style.display = 'none';
                 return;
             }
+            livePreview.style.display = 'block';
+            const raw = noteInput.value || '';
+            let html = raw;
+            try{ html = window.marked ? marked.parse(raw) : escapeHtml(raw); }catch(e){ html = escapeHtml(raw); }
+            const safe = (window.DOMPurify && DOMPurify.sanitize) ? DOMPurify.sanitize(html) : html;
+            livePreview.innerHTML = safe;
+        };
+
+function dragStart(event, id) {
+    event.dataTransfer.setData("text/plain", id);
+}
+
+function allowDrop(event) {
+    event.preventDefault();
+}
+
+function drop(event) {
+
+    event.preventDefault();
+
+    let noteId =
+        event.dataTransfer.getData("text/plain");
+
+    let column =
+        event.target.closest(".kanban-column");
+
+    let newStatus =
+        column.getAttribute("data-status");
+
+    let note =
+        notes.find(n => String(n.id) === String(noteId));
+
+    if (note) {
+        note.status = newStatus;
+
+        localStorage.setItem(
+            "notes",
+            JSON.stringify(notes)
+        );
+
+        displayNotes();
+    }
+}
+
+function dragLeave(event) {
+    const column = event.target.closest(".kanban-column");
+
+    if (column) {
+        column.classList.remove("drag-over");
+    }
+}
+
+function escapeHtml(str) {
+    return String(str)
+        .replaceAll("&", "&amp;")
+        .replaceAll("<", "&lt;")
+        .replaceAll(">", "&gt;")
+        .replaceAll('"', "&quot;")
+        .replaceAll("'", "&#039;");
+}
+
+function clearDraft() {
+    localStorage.removeItem(AUTO_SAVE_KEY);
+}
+
+function refreshFilters() {
+    const select =
+        document.getElementById("filterSubject");
+
+    if (!select) return;
+
+    const subjects =
+        [...new Set(
+            notes.map(n => n.subject).filter(Boolean)
+        )];
+
+    select.innerHTML =
+        '<option value="">All subjects</option>' +
+        subjects.map(
+            s => `<option value="${s}">${s}</option>`
+        ).join("");
+}
+
+function renderSuggestedTags() {
+
+    const container =
+        document.getElementById("suggestedTags");
+
+    if (!container) return;
+
+    const tags =
+        [...new Set(notes.flatMap(n => n.tags || []))];
+
+    container.innerHTML =
+        tags.map(
+            t => `<span class="tag">${escapeHtml(t)}</span>`
+        ).join(" ");
         }
     }
 }
@@ -1029,6 +1006,17 @@ function showToast(message) {
     }, 3000);
 }
 
+function initTheme() {
+
+    const savedTheme =
+        localStorage.getItem(THEME_KEY);
+
+    const theme =
+        savedTheme || "light";
+
+    document.documentElement
+        .setAttribute("data-theme", theme);
+}
 // ---------------------
 // Minimal Recent History
 // ---------------------

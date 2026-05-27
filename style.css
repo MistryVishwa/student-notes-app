@@ -728,6 +728,30 @@ button:hover {
     padding: 0;
     cursor: pointer;
     font-size: 12px;
+}
+
+.note:active {
+    cursor: grabbing;
+}
+
+.note:hover {
+    box-shadow: var(--shadow-lg);
+    transform: translateY(-2px);
+}
+
+.delete-btn {
+    position: absolute;
+    top: -8px;
+    right: -8px;
+    background: #EF4444;
+    color: white;
+    border: none;
+    width: 24px;
+    height: 24px;
+    border-radius: 50%;
+    padding: 0;
+    cursor: pointer;
+    font-size: 12px;
     display: flex;
     align-items: center;
     justify-content: center;
@@ -766,6 +790,17 @@ button:hover {
     opacity: 0;
     transform: scale(0.8);
     transition: all 0.2s ease;
+    box-shadow: 0 2px 4px rgba(239, 68, 68, 0.4);
+}
+
+.note:hover .delete-btn {
+    opacity: 1;
+    transform: scale(1);
+}
+
+.delete-btn:hover {
+    background: #DC2626;
+    transform: scale(1.1) !important;
     box-shadow: var(--shadow-sm);
 }
 
