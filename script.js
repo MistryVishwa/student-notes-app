@@ -1,6 +1,8 @@
 let notes = (JSON.parse(localStorage.getItem("notes")) || []).map(n => 
     typeof n === 'string' ? { text: n, date: "Created: " + new Date().toLocaleString() } : n
 );
+let folders = JSON.parse(localStorage.getItem("folders")) || [];
+let subjects = JSON.parse(localStorage.getItem("subjects")) || [];
 
 // Data Migration
 notes = notes.map((note, index) => {
@@ -17,175 +19,12 @@ let currentView = "list";
 const THEME_KEY = "theme";
 
 
-displayNotes();
-initTheme();
-
-
 let currentView = "list"; // default view
 
 displayNotes();
 initTheme();
-
-// Auto-save configuration
-const AUTO_SAVE_KEY = 'draft';
-const AUTO_SAVE_DELAY = 2000; // ms of inactivity before saving
-let autoSaveTimer = null;
-
-function scheduleAutoSave(){
-    const statusEl = document.getElementById('saveStatus');
-    if(statusEl) statusEl.textContent = 'Saving...';
-    if(autoSaveTimer) clearTimeout(autoSaveTimer);
-    autoSaveTimer = setTimeout(()=>{
-        saveDraft();
-        if(statusEl) {
-            const time = new Date();
-            statusEl.textContent = 'Saved';
-            // briefly show saved then clear after 2s
-            setTimeout(()=>{ if(statusEl) statusEl.textContent = ''; }, 2000);
-        }
-        autoSaveTimer = null;
-    }, AUTO_SAVE_DELAY);
-}
-
-function saveDraft(){
-    const title = document.getElementById('noteTitle')?.value || '';
-    const content = document.getElementById('noteInput')?.value || '';
-    const tags = document.getElementById('noteTags')?.value || '';
-    const subject = document.getElementById('noteSubject')?.value || '';
-
-    const draft = {
-        title, content, tags, subject, savedAt: Date.now()
-    };
-    try{ localStorage.setItem(AUTO_SAVE_KEY, JSON.stringify(draft)); }catch(e){ console.warn('Failed to save draft', e); }
-}
-
-function restoreDraft(){
-    try{
-        const raw = localStorage.getItem(AUTO_SAVE_KEY);
-        if(!raw) return false;
-        const draft = JSON.parse(raw);
-        // If editor already has content, skip auto-restoring to avoid overwriting
-        const currentContent = document.getElementById('noteInput')?.value || '';
-        const currentTitle = document.getElementById('noteTitle')?.value || '';
-        if(currentContent || currentTitle) return false;
-
-        if(draft.title) document.getElementById('noteTitle').value = draft.title;
-        if(draft.content) document.getElementById('noteInput').value = draft.content;
-        if(draft.tags) document.getElementById('noteTags').value = draft.tags;
-        if(draft.subject) document.getElementById('noteSubject').value = draft.subject;
-
-        const statusEl = document.getElementById('saveStatus');
-        if(statusEl) statusEl.textContent = 'Restored draft';
-        setTimeout(()=>{ if(statusEl) statusEl.textContent = ''; }, 2000);
-        return true;
-    }catch(e){ return false; }
-}
-
-function clearDraft(){
-    try{ localStorage.removeItem(AUTO_SAVE_KEY); }catch(e){}
-}
-
-// UI state
-let searchQuery = "";
-let filterTags = [];
-let filterSubject = "";
-let globalTags = [];
-// Folder model: simple parent-relation tree
-let folders = JSON.parse(localStorage.getItem('folders')) || [];
-let currentFolder = null; // currently selected folder id (string)
-// Subjects mapping: name -> color (hex)
-let subjects = JSON.parse(localStorage.getItem('subjects')) || {};
-// Attendance mapping: subject -> [{date:'YYYY-MM-DD', status:'present'|'absent'}]
-let attendance = JSON.parse(localStorage.getItem('attendance')) || {};
-
-function saveAttendance(){ try{ localStorage.setItem('attendance', JSON.stringify(attendance)); }catch(e){} }
-
-// Assignments list: {id,title,subject,due:'YYYY-MM-DD',completed:boolean}
-let assignments = JSON.parse(localStorage.getItem('assignments')) || [];
-function saveAssignments(){ try{ localStorage.setItem('assignments', JSON.stringify(assignments)); }catch(e){} }
-
-
-const TAGS_KEY = 'allTags';
-
-function loadGlobalTags(){
-    try{ globalTags = JSON.parse(localStorage.getItem(TAGS_KEY)) || []; }catch(e){ globalTags = []; }
-}
-
-function saveGlobalTags(){
-    try{ localStorage.setItem(TAGS_KEY, JSON.stringify(globalTags)); }catch(e){}
-}
-
-function addGlobalTags(tags){
-    if(!Array.isArray(tags)) return;
-    tags.forEach(t=>{
-        const val = String(t).trim();
-        if(!val) return;
-        const exists = globalTags.some(gt=>gt.toLowerCase() === val.toLowerCase());
-        if(!exists) globalTags.push(val);
-    });
-    saveGlobalTags();
-}
-
-function renderSuggestedTags(){
-    const container = document.getElementById('suggestedTags');
-    if(!container) return;
-    // compute tag counts from notes
-    const counts = {};
-    notes.forEach(n=> (n.tags||[]).forEach(t=>{ const k=t; counts[k] = (counts[k]||0)+1 }));
-    // merge globalTags with counts, sort by count desc then name
-    const list = Array.from(new Set([].concat(globalTags, Object.keys(counts))));
-    list.sort((a,b)=> (counts[b]||0) - (counts[a]||0) || a.localeCompare(b));
-    container.innerHTML = list.map(t=>`<button type="button" class="suggested-tag" onclick="applyTagFilter(${JSON.stringify(t)})">${escapeHtml(t)}${counts[t] ? ' ('+counts[t]+')' : ''}</button>`).join(' ');
-}
-
-function applyTagFilter(tag){
-    if(!tag) return;
-    filterTags = [String(tag)];
-    const filterTagsInput = document.getElementById('filterTags');
-    if(filterTagsInput) filterTagsInput.value = tag;
-    displayNotes();
-}
-
-normalizeNotes();
-displayNotes();
-initTheme();
-
-function normalizeNotes(){
-    // Convert old string notes into structured objects
-    notes = notes.map(n => {
-        if(typeof n === 'string'){
-            const lines = n.split('\n').map(l=>l.trim()).filter(Boolean);
-            return {
-                id: Date.now() + Math.floor(Math.random()*1000),
-                title: lines[0] || '',
-                content: lines.slice(1).join('\n') || lines[0] || '',
-                tags: [],
-                subject: '',
-                pinned: false,
-                favorite: false
-            };
-        }
-        // Already structured, ensure keys exist
-        return {
-            id: n.id || (Date.now() + Math.floor(Math.random()*1000)),
-            title: n.title || '',
-            content: n.content || '',
-            sections: Array.isArray(n.sections) ? n.sections : [],
-            tags: Array.isArray(n.tags) ? n.tags : (n.tags ? String(n.tags).split(',').map(s=>s.trim()).filter(Boolean) : []),
-            subject: n.subject || '',
-            pinned: !!n.pinned,
-            favorite: !!n.favorite
-        };
-    });
-
-    localStorage.setItem('notes', JSON.stringify(notes));
-    // load and sync tags
-    loadGlobalTags();
-    // seed global tags from notes
-    notes.forEach(n=> addGlobalTags(n.tags||[]));
-    renderSuggestedTags();
-}
-
+setupInputListeners();
+updateSidebar();
 
 function toggleView() {
     currentView = currentView === "list" ? "board" : "list";
@@ -207,6 +46,17 @@ function toggleView() {
 }
 
 function addNote() {
+
+    const input = document.getElementById("noteInput");
+    const titleInput = document.getElementById("noteTitle");
+    const tagsInput = document.getElementById("noteTags");
+    const subjectInput = document.getElementById("noteSubject");
+    const folderInput = document.getElementById("noteFolder");
+    
+    const noteText = input.value.trim();
+    const titleText = titleInput.value.trim();
+
+    let title = document.getElementById("noteTitle").value.trim();
     let input = document.getElementById("noteInput");
     let titleInput = document.getElementById("noteTitle");
     let tagsInput = document.getElementById("noteTags");
@@ -246,11 +96,32 @@ function addNote() {
     if (notes.some(n => n.text === noteText)) {
 
 
-    if (notes.includes(noteText)) {
 
-        alert("This note already exists!");
+
+    if(noteText === "" && titleText === ""){
+        alert("Please enter a title or note content");
         return;
     }
+
+
+    notes.push({ 
+        text: noteText, 
+        title: titleText,
+        tags: tagsInput.value,
+        subject: subjectInput.value,
+        folder: folderInput.value,
+        date: "Created: " + new Date().toLocaleString() 
+    });
+
+    localStorage.setItem(
+        "notes",
+        JSON.stringify(notes)
+    );
+
+    input.value = "";
+    titleInput.value = "";
+    tagsInput.value = "";
+    subjectInput.value = "";
 
     notes.push({ text: noteText, date: "Created: " + new Date().toLocaleString() });
     let dueDate = document.getElementById('noteDueDate')?.value || '';
@@ -485,16 +356,14 @@ function togglePin(id) {
         note.pinned = !note.pinned;
 
 function editNote(index){
-    let newNote = prompt("Edit your note:", notes[index].text);
+    const note = notes[index];
+    const newText = prompt("Edit your note content:", note.text);
     if(newNote !== null && newNote.trim() !== ""){
-        let trimmedNote = newNote.trim();
-        
-        if (notes.some((n, i) => n.text === trimmedNote && i !== index)) {
-            alert("A note with this text already exists!");
-            return;
-        }
-
-        notes[index] = { text: trimmedNote, date: "Edited: " + new Date().toLocaleString() };
+        notes[index] = { 
+            ...note, 
+            text: newText.trim(), 
+            date: "Edited: " + new Date().toLocaleString() 
+        };
         localStorage.setItem("notes", JSON.stringify(notes));
         displayNotes();
     }
@@ -577,6 +446,30 @@ function escapeHtml(str){
         .replaceAll('"', '"')
         .replaceAll("'", '&#039;');
 }
+
+function setupInputListeners() {
+    // Map input IDs to their respective actions
+    const inputs = [
+        { id: "noteTitle", action: addNote },
+        { id: "noteInput", action: addNote, isTextArea: true },
+        { id: "noteTags", action: addNote },
+        { id: "noteSubject", action: addNote },
+        { id: "newFolderName", action: addFolder },
+        { id: "newSubjectName", action: addSubject }
+    ];
+
+    inputs.forEach(inputConfig => {
+        const el = document.getElementById(inputConfig.id);
+        if (el) {
+            el.addEventListener("keydown", (e) => {
+                if (e.key === "Enter") {
+                    if (!inputConfig.isTextArea || e.ctrlKey || e.metaKey) {
+                        e.preventDefault();
+                        inputConfig.action();
+                    }
+                }
+            });
+        }
 
 // Walk DOM and wrap matching text in <mark> elements (case-insensitive)
 function highlightInElement(element, query){
@@ -1135,85 +1028,50 @@ function gatherSectionsFromEditor(){
         const type = block.querySelector('.section-type')?.textContent || 'section';
         const content = block.querySelector('textarea')?.value || '';
         out.push({ type: type.trim().toLowerCase(), content });
+
     });
-    return out;
+
+    // Also attach clicks to the sidebar buttons that were missing logic
+    document.getElementById("addFolderBtn")?.addEventListener("click", addFolder);
+    document.getElementById("addSubjectBtn")?.addEventListener("click", addSubject);
 }
 
-function renderSectionsInEditor(sections){
-    const list = document.getElementById('sectionsList');
-    if(!list) return;
-    list.innerHTML = '';
-    (sections || []).forEach(s=> addSectionBlock(s.type || 'section', s.content || ''));
-}
-function recordRecent(note){
-    if(!note) return;
-    try{
-        const raw = localStorage.getItem('recentNotes');
-        const list = raw ? JSON.parse(raw) : [];
-        const id = String(note.id || note._id || Date.now());
-        // remove existing entry for id
-        const filtered = list.filter(i=> String(i.id) !== id);
-        filtered.unshift({ id, title: note.title || (note.content||'').slice(0,60), ts: Date.now() });
-        // limit to 10
-        const sliced = filtered.slice(0,10);
-        localStorage.setItem('recentNotes', JSON.stringify(sliced));
-        renderRecent();
-    }catch(e){ console.warn('recordRecent error', e); }
-}
-
-function renderRecent(){
-    const container = document.getElementById('recentContainer');
-    if(!container) return;
-    try{
-        const raw = localStorage.getItem('recentNotes');
-        const list = raw ? JSON.parse(raw) : [];
-        if(!list.length){ container.innerHTML = '<div class="empty-state">No recent notes yet.</div>'; return; }
-        container.innerHTML = list.map(item=>{
-            const time = new Date(item.ts).toLocaleString();
-            const title = escapeHtml(item.title || 'Untitled');
-            return `
-                <div class="recent-item">
-                    <div>
-                        <div class="title">${title}</div>
-                        <div class="meta">${time}</div>
-                    </div>
-                    <div>
-                        <button class="open-btn" onclick="openNote('${item.id}')">Open</button>
-                    </div>
-                </div>
-            `;
-        }).join('');
-    }catch(e){ container.innerHTML = '<div class="empty-state">Unable to load recent notes.</div>'; }
-}
-
-function openNote(id){
-    if(!id) return;
-    const idx = notes.findIndex(n=> String(n.id) === String(id));
-    if(idx === -1) {
-        alert('Note not found');
-        return;
+function addFolder() {
+    const input = document.getElementById("newFolderName");
+    const name = input.value.trim();
+    if (name) {
+        folders.push(name);
+        localStorage.setItem("folders", JSON.stringify(folders));
+        input.value = "";
+        updateSidebar();
     }
-    const note = notes[idx];
-    // populate editor
-    const titleEl = document.getElementById('noteTitle');
-    const inputEl = document.getElementById('noteInput');
-    const tagsEl = document.getElementById('noteTags');
-    const subjectEl = document.getElementById('noteSubject');
-    if(titleEl) titleEl.value = note.title || '';
-    if(inputEl) inputEl.value = note.content || '';
-    if(tagsEl) tagsEl.value = (note.tags || []).join(', ');
-    if(subjectEl) subjectEl.value = note.subject || '';
-    // focus the editor
-    if(inputEl) inputEl.focus();
-    // record that user opened this note
-    try{ recordRecent(note); }catch(e){}
-    // populate sections editor
-    try{ renderSectionsInEditor(note.sections || []); }catch(e){}
 }
 
-// Render recent on load
-document.addEventListener('DOMContentLoaded', ()=>{
-    try{ renderRecent(); }catch(e){}
-});
+function addSubject() {
+    const input = document.getElementById("newSubjectName");
+    const color = document.getElementById("newSubjectColor").value;
+    const name = input.value.trim();
+    if (name) {
+        subjects.push({ name, color });
+        localStorage.setItem("subjects", JSON.stringify(subjects));
+        input.value = "";
+        updateSidebar();
+    }
+}
 
+function updateSidebar() {
+    const folderTree = document.getElementById("foldersTree");
+    const subjectList = document.getElementById("subjectsList");
+    const folderSelect = document.getElementById("noteFolder");
 
+    if (folderTree) folderTree.innerHTML = folders.map(f => `<div class="sidebar-item">📁 ${escapeHtml(f)}</div>`).join('');
+    if (subjectList) subjectList.innerHTML = subjects.map(s => `
+        <div class="sidebar-item">
+            <span class="color-dot" style="background:${s.color}; display:inline-block; width:10px; height:10px; border-radius:50%; margin-right:8px"></span>
+            ${escapeHtml(s.name)}
+        </div>`).join('');
+    
+    if (folderSelect) {
+        folderSelect.innerHTML = '<option value="">No folder</option>' + folders.map(f => `<option value="${f}">${f}</option>`).join('');
+    }
+}

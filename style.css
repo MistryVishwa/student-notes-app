@@ -199,6 +199,7 @@ h1{
     align-items:center;
     justify-content:center;
     position:relative;
+    margin-bottom:20px;
 
 }
 
@@ -271,6 +272,9 @@ textarea{
                 color 0.3s ease,
                 border-color 0.3s ease;
 }
+
+textarea::placeholder{
+    color: color-mix(in srgb, var(--muted-text-color) 80%, transparent);
 
 
 textarea::placeholder{
@@ -546,6 +550,7 @@ button:hover {
     border: 1px solid #E5E7EB;
     box-shadow: var(--shadow-sm);
     transition: all 0.3s ease;
+
 }
 
 .secondary-btn:hover {
@@ -1439,3 +1444,4 @@ button[onclick="addNote()"]{
     .empty-state{ padding:18px; }
     .empty-state .empty-art{ width:120px; height:90px; }
 }
+
