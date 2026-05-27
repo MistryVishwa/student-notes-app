@@ -179,7 +179,6 @@ body{
     margin-bottom: 24px;
 }
 
-
 .title-input {
     width: 100%;
     padding: 12px;
@@ -190,6 +189,13 @@ body{
     border-radius: 8px;
     background: var(--input-bg);
     color: var(--text-color);
+}
+
+.input-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr 1fr;
+    gap: 12px;
+    margin-top: 12px;
 
 h1{
     text-align:center;
@@ -203,11 +209,14 @@ h1{
 
 }
 
-.input-grid {
-    display: grid;
-    grid-template-columns: 1fr 1fr 1fr;
-    gap: 12px;
-    margin-top: 12px;
+.live-preview {
+    margin-top: 15px;
+    padding: 15px;
+    background: var(--surface-color);
+    border: 1px solid var(--border-color);
+    border-radius: 8px;
+    min-height: 50px;
+    font-size: 0.95rem;
 }
 
 /* =========================
@@ -272,6 +281,10 @@ textarea{
                 color 0.3s ease,
                 border-color 0.3s ease;
 }
+
+textarea::placeholder{
+    color: color-mix(in srgb, var(--muted-text-color) 80%, transparent);
+
 
 textarea::placeholder{
     color: color-mix(in srgb, var(--muted-text-color) 80%, transparent);
@@ -543,10 +556,9 @@ button:hover {
     transition: transform 0.2s ease;
 }
 
-.note.archived {
-    opacity: 0.8;
-    background: var(--surface-color);
-
+.note.pinned {
+    border: 2px solid var(--primary-bg);
+    box-shadow: 0 4px 12px var(--shadow-color);
 .view-controls {
     display: flex;
     justify-content: flex-end;
@@ -577,10 +589,15 @@ button:hover {
 
 }
 
+.note.archived {
+    opacity: 0.8;
+    background: var(--surface-color);
+}
+
+
 .note:hover {
     transform: translateY(-2px);
 }
-
 
 .note-title {
     font-weight: 700;
@@ -623,6 +640,18 @@ button:hover {
     justify-content: center;
     border-radius: 4px;
     font-size: 12px;
+}
+
+.attendance-summary {
+    margin-top: 10px;
+    font-size: 0.8rem;
+    color: var(--muted-text-color);
+}
+
+.attendance-item {
+    display: flex;
+    justify-content: space-between;
+    margin-bottom: 4px;
 }
 
 /* =========================
@@ -1465,5 +1494,4 @@ button[onclick="addNote()"]{
     .empty-state{ padding:18px; }
     .empty-state .empty-art{ width:120px; height:90px; }
 }
-
 

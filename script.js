@@ -1,8 +1,15 @@
 let notes = (JSON.parse(localStorage.getItem("notes")) || []).map(n => 
-    typeof n === 'string' ? { text: n, date: "Created: " + new Date().toLocaleString() } : n
+    typeof n === 'string' 
+        ? { text: n, title: "", tags: "", subject: "", folder: "", archived: false, pinned: false, date: "Created: " + new Date().toLocaleString() } 
+        : { 
+            ...n, 
+            pinned: n.pinned || false, 
+            archived: n.archived || false 
+          }
 );
 let folders = JSON.parse(localStorage.getItem("folders")) || [];
 let subjects = JSON.parse(localStorage.getItem("subjects")) || [];
+let attendance = JSON.parse(localStorage.getItem("attendance")) || {};
 
 // Data Migration
 notes = notes.map((note, index) => {
@@ -20,7 +27,6 @@ const THEME_KEY = "theme";
 
 
 let currentView = "list"; // default view
-
 
 displayNotes();
 initTheme();
@@ -112,6 +118,7 @@ function addNote() {
         subject: subjectInput.value,
         folder: folderInput.value,
         archived: false,
+        pinned: false,
         date: "Created: " + new Date().toLocaleString() 
     });
 
@@ -162,45 +169,9 @@ function displayNotes(){
     let container = document.getElementById("notesContainer");
     const showArchived = document.getElementById("showArchived")?.checked || false;
     const searchQuery = document.getElementById("searchInput")?.value.toLowerCase() || "";
+    const sortOrder = document.getElementById("sortOrder")?.value || "";
 
     container.innerHTML = "";
-
-
-    if (notes.length === 0) {
-        container.innerHTML = `
-            <div class="empty-state">
-                <p>No notes found. Start by adding your first note above!</p>
-            </div>
-        `;
-        return;
-    }
-
-    notes.forEach((note,index)=>{
-        if (!!note.archived !== showArchived) return;
-        if (searchQuery && !note.title.toLowerCase().includes(searchQuery) && !note.text.toLowerCase().includes(searchQuery)) return;
-
-        const tagsHtml = note.tags ? note.tags.split(',').map(t => `<span class="note-tag">#${t.trim()}</span>`).join('') : '';
-        
-        container.innerHTML += `
-            <div class="note ${note.archived ? 'archived' : ''}">
-                <div class="note-actions">
-                    <button class="icon-btn archive-btn" onclick="toggleArchive(${index})" title="${note.archived ? 'Restore' : 'Archive'}">
-                        ${note.archived ? '📥' : '📦'}
-                    </button>
-                    <button class="icon-btn edit-btn" onclick="editNote(${index})" aria-label="Edit">✎</button>
-                    <button class="icon-btn delete-btn" onclick="deleteNote(${index})" aria-label="Delete">✕</button>
-                </div>
-                ${note.title ? `<strong class="note-title">${escapeHtml(note.title)}</strong>` : ''}
-                <div class="note-text">${escapeHtml(note.text)}</div>
-                <div class="note-footer" style="margin-top:10px">
-                    ${tagsHtml}
-                </div>
-                <div class="note-date">${note.date}</div>
-            </div>
-        `;
-    });
-}
-
 
     pinnedContainer.innerHTML = "";
 
@@ -263,6 +234,55 @@ function displayNotes(){
         }
 
         const safeHtml = (window.DOMPurify && DOMPurify.sanitize) ? DOMPurify.sanitize(rawHtml) : rawHtml;
+
+
+    // Sort Logic: Pinned first, then by the selected Sort Order
+    notes.sort((a, b) => {
+        if (a.pinned !== b.pinned) return b.pinned ? 1 : -1;
+        
+        if (sortOrder === "asc") return (a.title || a.text).localeCompare(b.title || b.text);
+        if (sortOrder === "desc") return (b.title || b.text).localeCompare(a.title || a.text);
+        return 0;
+    });
+
+
+    if (notes.length === 0) {
+        container.innerHTML = `
+            <div class="empty-state">
+                <p>No notes found. Start by adding your first note above!</p>
+            </div>
+        `;
+        return;
+    }
+
+    notes.forEach((note,index)=>{
+        if (!!note.archived !== showArchived) return;
+        if (searchQuery && !note.title.toLowerCase().includes(searchQuery) && !note.text.toLowerCase().includes(searchQuery)) return;
+
+        const tagsHtml = note.tags ? note.tags.split(',').map(t => `<span class="note-tag">#${t.trim()}</span>`).join('') : '';
+        
+        container.innerHTML += `
+            <div class="note ${note.pinned ? 'pinned' : ''} ${note.archived ? 'archived' : ''}">
+                <div class="note-actions">
+                    <button class="icon-btn pin-btn" onclick="togglePin(${index})" title="${note.pinned ? 'Unpin' : 'Pin'}">
+                        ${note.pinned ? '📍' : '📌'}
+                    </button>
+                    <button class="icon-btn archive-btn" onclick="toggleArchive(${index})" title="${note.archived ? 'Restore' : 'Archive'}">
+                        ${note.archived ? '📥' : '📦'}
+                    </button>
+                    <button class="icon-btn edit-btn" onclick="editNote(${index})" aria-label="Edit">✎</button>
+                    <button class="icon-btn delete-btn" onclick="deleteNote(${index})" aria-label="Delete">✕</button>
+                </div>
+                ${note.title ? `<strong class="note-title">${escapeHtml(note.title)}</strong>` : ''}
+                <div class="note-text">${renderMarkdown(note.text)}</div>
+                <div class="note-footer" style="margin-top:10px">
+                    ${tagsHtml}
+                </div>
+                <div class="note-date">${note.date}</div>
+            </div>
+        `;
+    });
+}
 
 
         // Use a temporary element to perform text-node highlighting
@@ -476,6 +496,9 @@ function setupInputListeners() {
         { id: "newFolderName", action: addFolder },
         { id: "newSubjectName", action: addSubject }
     ];
+
+    const noteInput = document.getElementById("noteInput");
+    const previewToggle = document.getElementById("livePreviewToggle");
 
     inputs.forEach(inputConfig => {
         const el = document.getElementById(inputConfig.id);
@@ -955,30 +978,27 @@ function renderAssignments(){
     }).join('');
 }
 
-function renderAssignmentSubjectSelect(){
-    const sel = document.getElementById('assignmentSubject');
-    if(!sel) return;
-    const keys = Object.keys(subjects || {});
-    const opts = ['<option value="">Subject</option>'].concat(keys.map(k=>`<option value="${escapeHtml(k)}">${escapeHtml(k)}</option>`));
-    sel.innerHTML = opts.join('');
-}
 
-// ---------------------
-// Attendance helpers
-// ---------------------
-function formatYMD(d){
-    if(!d) return '';
-    const dt = new Date(d);
-    const y = dt.getFullYear();
-    const m = String(dt.getMonth()+1).padStart(2,'0');
-    const day = String(dt.getDate()).padStart(2,'0');
-    return `${y}-${m}-${day}`;
-}
+    if (noteInput) {
+        noteInput.addEventListener("input", updateLivePreview);
+    }
 
+    if (previewToggle) {
+        previewToggle.addEventListener("change", (e) => {
+            const previewDiv = document.getElementById("livePreview");
+            if (previewDiv) {
+                previewDiv.style.display = e.target.checked ? "block" : "none";
+                if (e.target.checked) updateLivePreview();
+            }
+        });
+    }
 
     // Also attach clicks to the sidebar buttons that were missing logic
     document.getElementById("addFolderBtn")?.addEventListener("click", addFolder);
     document.getElementById("addSubjectBtn")?.addEventListener("click", addSubject);
+    
+    document.getElementById("markPresentBtn")?.addEventListener("click", () => markAttendance(true));
+    document.getElementById("markAbsentBtn")?.addEventListener("click", () => markAttendance(false));
 
     document.getElementById("searchInput")?.addEventListener("input", displayNotes);
 }
@@ -1006,10 +1026,54 @@ function addSubject() {
     }
 }
 
+function markAttendance(isPresent) {
+    const subject = document.getElementById("attendanceSubject").value;
+    if (!subject) return alert("Please select a subject first!");
+
+    if (!attendance[subject]) attendance[subject] = { present: 0, total: 0 };
+    
+    attendance[subject].total++;
+    if (isPresent) attendance[subject].present++;
+
+    localStorage.setItem("attendance", JSON.stringify(attendance));
+    updateSidebar();
+}
+
+function updateLivePreview() {
+    const input = document.getElementById("noteInput");
+    const preview = document.getElementById("livePreview");
+    const isVisible = document.getElementById("livePreviewToggle")?.checked;
+
+    if (preview && isVisible) {
+        preview.innerHTML = renderMarkdown(input.value || "*Preview will appear here...*");
+    }
+}
+
+function renderMarkdown(text) {
+    if (typeof marked !== 'undefined' && typeof DOMPurify !== 'undefined') {
+        return DOMPurify.sanitize(marked.parse(text));
+    }
+    return escapeHtml(text);
+}
+
 function updateSidebar() {
     const folderTree = document.getElementById("foldersTree");
     const subjectList = document.getElementById("subjectsList");
     const folderSelect = document.getElementById("noteFolder");
+    const attSubjectSelect = document.getElementById("attendanceSubject");
+
+    // Update Attendance Summary
+    let attSummaryHtml = '<div class="attendance-summary">';
+    for (const sub in attendance) {
+        const data = attendance[sub];
+        const percent = ((data.present / data.total) * 100).toFixed(1);
+        attSummaryHtml += `
+            <div class="attendance-item">
+                <span>${escapeHtml(sub)}</span>
+                <span>${percent}% (${data.present}/${data.total})</span>
+            </div>`;
+    }
+    attSummaryHtml += '</div>';
 
     if (folderTree) folderTree.innerHTML = folders.map(f => `<div class="sidebar-item">📁 ${escapeHtml(f)}</div>`).join('');
     if (subjectList) subjectList.innerHTML = subjects.map(s => `
@@ -1018,7 +1082,16 @@ function updateSidebar() {
             ${escapeHtml(s.name)}
         </div>`).join('');
     
+    const attPanel = document.getElementById("attendancePanel");
+    const existingSummary = attPanel.querySelector('.attendance-summary');
+    if (existingSummary) existingSummary.remove();
+    attPanel.insertAdjacentHTML('beforeend', attSummaryHtml);
+    
     if (folderSelect) {
         folderSelect.innerHTML = '<option value="">No folder</option>' + folders.map(f => `<option value="${f}">${f}</option>`).join('');
+    }
+
+    if (attSubjectSelect) {
+        attSubjectSelect.innerHTML = '<option value="">Subject</option>' + subjects.map(s => `<option value="${s.name}">${s.name}</option>`).join('');
     }
 }

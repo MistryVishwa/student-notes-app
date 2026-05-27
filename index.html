@@ -198,6 +198,7 @@
               <option value="important">Important</option>
               <option value="formula">Formula / Reference</option>
               <option value="summary">Summary</option>
+              <option value="code">Code / Example</option>
 
             </select>
           </div>
@@ -206,9 +207,9 @@
             <label><input type="checkbox" id="livePreviewToggle" /> Live preview</label>
             <button onclick="addNote()" class="primary-btn">Save Note</button>
           </div>
-
           <div id="livePreview" class="live-preview" style="display:none"></div>
         </section>
+
 
         <section class="search-section">
           <input id="searchInput" placeholder="Search notes..." />
@@ -226,9 +227,8 @@
         <div id="notesContainer" class="notes-grid"></div>
       </div>
     </main>
+  </div>
 
-      </section>
-    </main>
 
     <div class="view-controls">
       <div class="view-toggle" role="tablist" aria-label="View mode">
@@ -375,6 +375,13 @@
 
 
     <div id="toastContainer" class="toast-container"></div>
+
+
+
+  <!-- Markdown renderer and sanitizer -->
+  <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/dompurify@2.4.0/dist/purify.min.js"></script>
+  <script src="script.js"></script>
 
     <!-- Markdown renderer and sanitizer -->
     <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
@@ -610,6 +617,7 @@
             }catch(e){}
           });
         });
+
 
         // ensure drag handlers are attached after notes are rendered
         const prevDisplay = window.displayNotes;
