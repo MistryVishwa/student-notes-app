@@ -1,6 +1,20 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Student Notes App</title>
+
+  <!-- Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link
+    href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap"
+    rel="stylesheet"
+  />
+
+  <!-- Styles -->
+  <link rel="stylesheet" href="style.css" />
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Notes App</title>
@@ -9,7 +23,49 @@
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="style.css">
 </head>
+
 <body>
+  <div class="container">
+
+    <!-- Header -->
+    <header class="site-header">
+      <h1>Student Notes App</h1>
+    </header>
+
+    <!-- Main Content -->
+    <main class="main-content">
+
+      <!-- Input Area -->
+      <section class="input-area">
+        <input
+          id="noteTitle"
+          placeholder="Title (optional)"
+        />
+
+        <textarea
+          id="noteInput"
+          placeholder="Write your note here... (Markdown supported)"
+        ></textarea>
+
+        <div class="input-row">
+          <input
+            id="noteTags"
+            placeholder="Tags (comma separated)"
+          />
+
+          <input
+            id="noteSubject"
+            placeholder="Subject / Category (optional)"
+          />
+        <div class="page-links">
+            <a class="nav-link" href="self-test.html">Weekly Self Test →</a>
+        </div>
+
+
+    <div class="container">
+        <div class="input-area">
+            <textarea id="noteInput" placeholder="Write your note here..."></textarea>
+
     <div class="container">
     <header class="site-header">
         <h1>Student Notes App</h1>
@@ -66,6 +122,14 @@
         </div>
       </section>
       <aside class="sidebar">
+
+        <div class="sidebar-section">
+          <h3>Folders</h3>
+          <div id="foldersTree"></div>
+          <div class="sidebar-input-group">
+            <input id="newFolderName" placeholder="New folder..." />
+            <button id="addFolderBtn" type="button">+</button>
+
         <div class="sidebar-mini" aria-hidden="true">
           <button class="mini-btn" id="miniHome" title="Home" aria-label="Home">🏠</button>
           <button class="mini-btn" id="miniFolders" title="Folders" aria-label="Folders">📁</button>
@@ -109,29 +173,53 @@
               <option value="">Select subject</option>
             </select>
             <input id="attendanceDate" type="date" />
+
           </div>
-          <div style="display:flex; gap:8px; margin-bottom:8px">
-            <button id="markPresentBtn" type="button">Present</button>
-            <button id="markAbsentBtn" type="button">Absent</button>
-          </div>
-          <div id="attendanceSummary" class="attendance-summary"></div>
         </div>
-        <hr style="margin:12px 0" />
-        <h3>Assignments</h3>
-        <div id="assignmentsPanel" class="assignment-panel">
-          <input id="assignmentTitle" placeholder="Assignment title" style="width:100%; padding:6px; margin-bottom:6px" />
-          <div style="display:flex; gap:8px; margin-bottom:8px; align-items:center">
-            <select id="assignmentSubject" style="flex:1">
+
+        <div class="sidebar-section">
+          <h3>Subjects</h3>
+          <div id="subjectsList"></div>
+          <div class="sidebar-input-group">
+            <input id="newSubjectName" placeholder="New subject..." />
+            <input id="newSubjectColor" type="color" value="#3b82f6" title="Pick color" />
+            <button id="addSubjectBtn" type="button">+</button>
+          </div>
+        </div>
+
+        <div class="sidebar-section">
+          <h3>Attendance</h3>
+          <div id="attendancePanel" class="attendance-panel">
+            <select id="attendanceSubject">
               <option value="">Subject</option>
             </select>
-            <input id="assignmentDue" type="date" />
+            <div class="sidebar-input-group">
+              <button id="markPresentBtn" type="button" class="btn-small">Present</button>
+              <button id="markAbsentBtn" type="button" class="btn-small btn-danger">Absent</button>
+            </div>
           </div>
-          <div style="display:flex; gap:8px; margin-bottom:8px">
-            <button id="addAssignmentBtn" type="button">Add Assignment</button>
-          </div>
-          <div id="assignmentsList" class="assignments-list"></div>
         </div>
       </aside>
+
+
+      <div class="content-area">
+        <section class="editor-section">
+          <input id="noteTitle" class="title-input" placeholder="Note Title (optional)" />
+          <textarea id="noteInput" placeholder="Write your note here... (Markdown supported)"></textarea>
+          
+          <div class="input-grid">
+            <div class="tags-input-container">
+              <input id="noteTags" placeholder="Tags (e.g. exam, lab)" />
+              <div class="quick-tags">
+                <button type="button" class="tag-pill" onclick="addQuickTag('Study')">Study</button>
+                <button type="button" class="tag-pill" onclick="addQuickTag('Assignment')">Assignment</button>
+                <button type="button" class="tag-pill" onclick="addQuickTag('Revision')">Revision</button>
+              </div>
+            </div>
+            <input id="noteSubject" placeholder="Subject" />
+            <select id="noteFolder">
+              <option value="">No folder</option>
+
       <div class="input-area">
         <input id="noteTitle" placeholder="Title (optional)" />
         <!-- Editor toolbar (bold, italic, heading, list, code, link) -->
@@ -170,37 +258,191 @@
               <option value="formula">Formula / Reference</option>
               <option value="summary">Summary</option>
               <option value="code">Code / Example</option>
+
             </select>
-            <button id="addSectionBtn">Add Section</button>
           </div>
         </div>
+
         <div class="input-row actions">
-          <label><input type="checkbox" id="livePreviewToggle" /> Live preview</label>
-          <div style="display:flex; align-items:center; gap:10px">
+          <label>
+            <input type="checkbox" id="livePreviewToggle" />
+            Live preview
+          </label>
+
+          <div style="display:flex; align-items:center; gap:10px;">
             <button onclick="addNote()">Add Note</button>
-            <span id="saveStatus" class="save-status" aria-live="polite"></span>
+            <span
+              id="saveStatus"
+              class="save-status"
+              aria-live="polite"
+            ></span>
           </div>
-        </div>
+          <div id="livePreview" class="live-preview" style="display:none"></div>
+        </section>
 
-        <div id="livePreview" class="live-preview" aria-hidden="true"></div>
-      </div>
+        <!-- Live Preview -->
+        <div
+          id="livePreview"
+          class="live-preview"
+          aria-hidden="true"
+        ></div>
+      </section>
 
+      <!-- Search & Filters -->
       <section class="search-area">
-        <input id="searchInput" placeholder="Search notes by title or content..." />
+        <input
+          id="searchInput"
+          placeholder="Search notes by title or content..."
+        />
+
         <div class="filters">
-          <input id="filterTags" placeholder="Filter by tag (comma separated)" />
+          <input
+            id="filterTags"
+            placeholder="Filter by tag (comma separated)"
+          />
+
           <select id="filterSubject">
             <option value="">All subjects</option>
           </select>
         </div>
-          <div class="suggested-tags-area">
-            <input id="newTagInput" placeholder="Add tag" />
-            <button id="addTagBtn" type="button">Add Tag</button>
-            <div id="suggestedTags" class="suggested-tags"></div>
-          </div>
-      </section>
-    </main>
 
+        <!-- Suggested Tags -->
+        <div class="suggested-tags-area">
+          <input
+            id="newTagInput"
+            placeholder="Add tag"
+          />
+
+          <button id="addTagBtn" type="button">
+            Add Tag
+          </button>
+
+          <div
+            id="suggestedTags"
+            class="suggested-tags"
+          ></div>
+        </div>
+      </section>
+
+      <!-- View Controls -->
+      <div class="view-controls">
+        <button
+          id="toggleViewBtn"
+          onclick="toggleView()"
+          class="secondary-btn"
+        >
+          Switch to Board View
+        </button>
+      </div>
+
+      <!-- Sort Controls -->
+      <div class="sort-controls">
+        <select id="sortOrder" onchange="sortNotes()">
+          <option value="" selected disabled>
+            Sort Alphabetically
+          </option>
+          <option value="asc">A to Z</option>
+          <option value="desc">Z to A</option>
+        </select>
+      </div>
+
+      <!-- Notes Container -->
+      <div id="notesContainer"></div>
+
+      <!-- Kanban Board -->
+      <div id="kanbanBoard" class="hidden">
+
+        <div
+          class="kanban-column"
+          id="todo"
+          data-status="todo"
+          ondrop="drop(event)"
+          ondragover="allowDrop(event)"
+          ondragleave="dragLeave(event)"
+        >
+          <h2>To Do</h2>
+          <div class="kanban-content"></div>
+        </div>
+
+        <div
+          class="kanban-column"
+          id="doing"
+          data-status="doing"
+          ondrop="drop(event)"
+          ondragover="allowDrop(event)"
+          ondragleave="dragLeave(event)"
+        >
+          <h2>Doing</h2>
+          <div class="kanban-content"></div>
+        </div>
+
+        <div
+          class="kanban-column"
+          id="done"
+          data-status="done"
+          ondrop="drop(event)"
+          ondragover="allowDrop(event)"
+          ondragleave="dragLeave(event)"
+        >
+          <h2>Done</h2>
+          <div class="kanban-content"></div>
+        </div>
+
+      </div>
+
+      <!-- Pinned Notes -->
+      <section
+        id="pinnedSection"
+        class="pinned-section"
+        aria-labelledby="pinnedHeading"
+        style="display:none;"
+      >
+        <h2 id="pinnedHeading">Pinned Notes</h2>
+        <div id="pinnedContainer"></div>
+      </section>
+
+      <!-- Favorite Notes -->
+      <section
+        id="favoritesSection"
+        class="favorites-section"
+        aria-labelledby="favoritesHeading"
+        style="display:none;"
+      >
+        <h2 id="favoritesHeading">Favorites</h2>
+        <div id="favoritesContainer"></div>
+      </section>
+
+    </main>
+  </div>
+
+
+    <!-- Footer -->
+    <footer class="site-footer">
+      <p>© 2026 Student Notes App. All rights reserved.</p>
+    </footer>
+        <div class="view-controls">
+            <button id="toggleViewBtn" onclick="toggleView()" class="secondary-btn">Switch to Board View</button>
+        </div>
+
+        <div id="notesContainer"></div>
+
+        <div id="kanbanBoard" class="hidden">
+            <div class="kanban-column" id="todo" data-status="todo" ondrop="drop(event)" ondragover="allowDrop(event)" ondragleave="dragLeave(event)">
+                <h2>To Do</h2>
+                <div class="kanban-content"></div>
+            </div>
+            <div class="kanban-column" id="doing" data-status="doing" ondrop="drop(event)" ondragover="allowDrop(event)" ondragleave="dragLeave(event)">
+                <h2>Doing</h2>
+                <div class="kanban-content"></div>
+            </div>
+            <div class="kanban-column" id="done" data-status="done" ondrop="drop(event)" ondragover="allowDrop(event)" ondragleave="dragLeave(event)">
+                <h2>Done</h2>
+                <div class="kanban-content"></div>
+            </div>
+        </div>
+    </div>
+    <div class="view-controls" style="display: flex; justify-content: flex-end; margin-bottom: 20px;">
+        <button id="toggleViewBtn" onclick="toggleView()" class="secondary-btn" style="padding: 8px 16px; border-radius: 8px; border: 1px solid #ccc; background: #fff; cursor: pointer;">Switch to Board View</button>
     <div class="view-controls">
       <div class="view-toggle" role="tablist" aria-label="View mode">
         <button id="gridViewBtn" class="secondary-btn" aria-pressed="true" title="Grid view">Grid</button>
@@ -234,6 +476,15 @@
       <h2 id="favoritesHeading">Favorites</h2>
       <div id="favoritesContainer"></div>
     </section>
+
+      <!-- Minimal Recent History: shows recently opened or edited notes for quick access -->
+      <section id="recentSection" class="recent-section" aria-labelledby="recentHeading" style="display:block">
+        <h2 id="recentHeading">Recent</h2>
+        <div id="recentContainer" class="recent-container"></div>
+      </section>
+
+  </div>
+
 
     <section id="recentSection" class="recent-section" aria-labelledby="recentHeading">
       <h2 id="recentHeading">Recent</h2>
@@ -335,8 +586,17 @@
       })();
     </script>
 
+  <!-- Toast Notifications -->
+  <div id="toastContainer" class="toast-container"></div>
+
+  <!-- Scripts -->
     <div id="toastContainer" class="toast-container"></div>
 
+  <script src="script.js"></script>
+
+  <!-- Markdown Renderer & Sanitizer -->
+  <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/dompurify@2.4.0/dist/purify.min.js"></script>
     <!-- Markdown renderer and sanitizer -->
     <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/dompurify@2.4.0/dist/purify.min.js"></script>
@@ -571,6 +831,7 @@
             }catch(e){}
           });
         });
+
 
         // ensure drag handlers are attached after notes are rendered
         const prevDisplay = window.displayNotes;
@@ -880,4 +1141,3 @@
     </div>
 </body>
 </html>
-
