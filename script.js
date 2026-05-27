@@ -21,6 +21,7 @@ const THEME_KEY = "theme";
 
 let currentView = "list"; // default view
 
+
 displayNotes();
 initTheme();
 setupInputListeners();
@@ -110,6 +111,7 @@ function addNote() {
         tags: tagsInput.value,
         subject: subjectInput.value,
         folder: folderInput.value,
+        archived: false,
         date: "Created: " + new Date().toLocaleString() 
     });
 
@@ -158,6 +160,9 @@ function addNote() {
 function displayNotes(){
     const sortedNotes = [...notes].sort((a, b) => (b.pinned ? 1 : 0) - (a.pinned ? 1 : 0));
     let container = document.getElementById("notesContainer");
+    const showArchived = document.getElementById("showArchived")?.checked || false;
+    const searchQuery = document.getElementById("searchInput")?.value.toLowerCase() || "";
+
     container.innerHTML = "";
 
 
@@ -171,11 +176,17 @@ function displayNotes(){
     }
 
     notes.forEach((note,index)=>{
+        if (!!note.archived !== showArchived) return;
+        if (searchQuery && !note.title.toLowerCase().includes(searchQuery) && !note.text.toLowerCase().includes(searchQuery)) return;
+
         const tagsHtml = note.tags ? note.tags.split(',').map(t => `<span class="note-tag">#${t.trim()}</span>`).join('') : '';
         
         container.innerHTML += `
-            <div class="note">
+            <div class="note ${note.archived ? 'archived' : ''}">
                 <div class="note-actions">
+                    <button class="icon-btn archive-btn" onclick="toggleArchive(${index})" title="${note.archived ? 'Restore' : 'Archive'}">
+                        ${note.archived ? '📥' : '📦'}
+                    </button>
                     <button class="icon-btn edit-btn" onclick="editNote(${index})" aria-label="Edit">✎</button>
                     <button class="icon-btn delete-btn" onclick="deleteNote(${index})" aria-label="Delete">✕</button>
                 </div>
@@ -358,7 +369,7 @@ function togglePin(id) {
 function editNote(index){
     const note = notes[index];
     const newText = prompt("Edit your note content:", note.text);
-    if(newNote !== null && newNote.trim() !== ""){
+    if(newText !== null && newText.trim() !== ""){
         notes[index] = { 
             ...note, 
             text: newText.trim(), 
@@ -367,6 +378,13 @@ function editNote(index){
         localStorage.setItem("notes", JSON.stringify(notes));
         displayNotes();
     }
+}
+
+function toggleArchive(index) {
+    notes[index].archived = !notes[index].archived;
+    notes[index].date = (notes[index].archived ? "Archived: " : "Restored: ") + new Date().toLocaleString();
+    localStorage.setItem("notes", JSON.stringify(notes));
+    displayNotes();
 }
 
 function sortNotes() {
@@ -450,6 +468,7 @@ function escapeHtml(str){
 function setupInputListeners() {
     // Map input IDs to their respective actions
     const inputs = [
+        { id: "searchInput", action: displayNotes },
         { id: "noteTitle", action: addNote },
         { id: "noteInput", action: addNote, isTextArea: true },
         { id: "noteTags", action: addNote },
@@ -470,6 +489,7 @@ function setupInputListeners() {
                 }
             });
         }
+    });
 
 // Walk DOM and wrap matching text in <mark> elements (case-insensitive)
 function highlightInElement(element, query){
@@ -955,85 +975,12 @@ function formatYMD(d){
     return `${y}-${m}-${day}`;
 }
 
-function addAttendanceRecord(subject, dateStr, status){
-    if(!subject) return false;
-    const d = formatYMD(dateStr || new Date());
-    attendance[subject] = attendance[subject] || [];
-    // replace record for date if exists
-    const idx = attendance[subject].findIndex(r=> r.date === d);
-    if(idx !== -1) attendance[subject][idx].status = status;
-    else attendance[subject].push({ date: d, status });
-    saveAttendance();
-    return true;
-}
-
-function getAttendance(subject){
-    return (attendance[subject] || []).slice().sort((a,b)=> a.date.localeCompare(b.date));
-}
-
-function attendancePercent(subject){
-    const recs = attendance[subject] || [];
-    if(!recs.length) return null;
-    const present = recs.filter(r=> r.status === 'present').length;
-    return Math.round((present / recs.length) * 100);
-}
-
-function renderAttendancePanel(){
-    const sel = document.getElementById('attendanceSubject');
-    if(sel){
-        const keys = Object.keys(subjects || {});
-        const opts = ['<option value="">Select subject</option>'].concat(keys.map(k=>`<option value="${escapeHtml(k)}">${escapeHtml(k)}</option>`));
-        sel.innerHTML = opts.join('');
-    }
-    // summary area
-    const sum = document.getElementById('attendanceSummary');
-    if(!sum) return;
-    const keys = Object.keys(subjects || {});
-    if(!keys.length){ sum.innerHTML = '<div class="muted">No subjects to show attendance</div>'; return; }
-    sum.innerHTML = keys.map(k=>{
-        const pct = attendancePercent(k);
-        const pctText = pct === null ? 'No records' : pct + '%';
-        const warn = (pct !== null && pct < 75) ? ' low-attendance' : '';
-        return `<div class="attendance-row"><div>${escapeHtml(k)}</div><div class="attendance-pct${warn}">${pctText}</div></div>`;
-    }).join('');
-}
-
-// Section editor helpers
-function addSectionBlock(type, content){
-    const list = document.getElementById('sectionsList');
-    if(!list) return;
-    const id = 'sec_' + (Date.now() + Math.floor(Math.random()*1000));
-    const div = document.createElement('div');
-    div.className = 'section-block';
-    div.id = id;
-    div.innerHTML = `
-        <div class="section-header">
-            <div class="section-type">${escapeHtml(type)}</div>
-            <div><button class="section-remove" type="button">Remove</button></div>
-        </div>
-        <div class="section-content">
-            <textarea placeholder="Section content">${escapeHtml(content||'')}</textarea>
-        </div>
-    `;
-    list.appendChild(div);
-    const btn = div.querySelector('.section-remove');
-    if(btn) btn.addEventListener('click', ()=>{ div.remove(); });
-}
-
-function gatherSectionsFromEditor(){
-    const list = document.getElementById('sectionsList');
-    if(!list) return [];
-    const out = [];
-    Array.from(list.children).forEach(block=>{
-        const type = block.querySelector('.section-type')?.textContent || 'section';
-        const content = block.querySelector('textarea')?.value || '';
-        out.push({ type: type.trim().toLowerCase(), content });
-
-    });
 
     // Also attach clicks to the sidebar buttons that were missing logic
     document.getElementById("addFolderBtn")?.addEventListener("click", addFolder);
     document.getElementById("addSubjectBtn")?.addEventListener("click", addSubject);
+
+    document.getElementById("searchInput")?.addEventListener("input", displayNotes);
 }
 
 function addFolder() {

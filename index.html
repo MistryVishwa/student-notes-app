@@ -198,7 +198,6 @@
               <option value="important">Important</option>
               <option value="formula">Formula / Reference</option>
               <option value="summary">Summary</option>
-              <option value="code">Code / Example</option>
 
             </select>
           </div>
@@ -218,6 +217,10 @@
             <option value="asc">A-Z</option>
             <option value="desc">Z-A</option>
           </select>
+          <label class="archive-filter">
+            <input type="checkbox" id="showArchived" onchange="displayNotes()"> 
+            Show Archived
+          </label>
         </section>
 
         <div id="notesContainer" class="notes-grid"></div>

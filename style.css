@@ -281,6 +281,10 @@ textarea::placeholder{
     color: color-mix(in srgb, var(--muted-text-color) 80%, transparent);
 
 
+textarea::placeholder{
+    color: color-mix(in srgb, var(--muted-text-color) 80%, transparent);
+
+
 /* Search & filters */
 .search-area{
     margin-top:16px;
@@ -474,8 +478,28 @@ button:hover {
    ========================= */
 .sort-controls {
     display: flex;
-    justify-content: flex-end;
+    align-items: center;
+    gap: 15px;
     margin-bottom: 15px;
+}
+
+.search-section input {
+    flex: 1;
+    padding: 8px 12px;
+    border-radius: 8px;
+    border: 1px solid var(--border-color);
+    background: var(--input-bg);
+    color: var(--text-color);
+}
+
+.archive-filter {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 0.9rem;
+    white-space: nowrap;
+    cursor: pointer;
+    color: var(--muted-text-color);
 }
 
 #sortOrder {
@@ -519,24 +543,9 @@ button:hover {
     transition: transform 0.2s ease;
 }
 
-.note:hover {
-    transform: translateY(-2px);
-}
-
-.note-title {
-    font-weight: 700;
-    font-size: 1.1rem;
-    margin-bottom: 8px;
-    display: block;
-}
-
-.note-tag {
-    display: inline-block;
-    background: rgba(0,0,0,0.1);
-    padding: 2px 8px;
-    border-radius: 4px;
-    font-size: 0.7rem;
-    margin-right: 4px;
+.note.archived {
+    opacity: 0.8;
+    background: var(--surface-color);
 
 .view-controls {
     display: flex;
@@ -565,8 +574,37 @@ button:hover {
     margin-top: 8px;
     color: var(--muted-text-color);
     font-style: italic;
+
 }
 
+.note:hover {
+    transform: translateY(-2px);
+}
+
+
+.note-title {
+    font-weight: 700;
+    font-size: 1.1rem;
+    margin-bottom: 8px;
+    display: block;
+}
+
+.note-tag {
+    display: inline-block;
+    background: rgba(0,0,0,0.1);
+    padding: 2px 8px;
+    border-radius: 4px;
+    font-size: 0.7rem;
+    margin-right: 4px;
+}
+
+.note-date{
+    display: block;
+    font-size: 0.75rem;
+    margin-top: 8px;
+    color: var(--muted-text-color);
+    font-style: italic;
+}
 
 .note-actions {
     position:absolute;
@@ -597,23 +635,6 @@ button:hover {
     .input-grid {
         grid-template-columns: 1fr;
     }
-
-.edit-btn{
-    position:absolute;
-    top:5px;
-    right:45px;
-    background:var(--primary-bg);
-    color:var(--primary-text);
-    border:none;
-    width:auto;
-    padding:5px 10px;
-    cursor:pointer;
-    border-radius:6px;
-
-    transition: background-color 0.3s ease,
-                color 0.3s ease,
-                transform 0.1s ease;
-}
 
 .hidden {
     display: none !important;
@@ -1444,4 +1465,5 @@ button[onclick="addNote()"]{
     .empty-state{ padding:18px; }
     .empty-state .empty-art{ width:120px; height:90px; }
 }
+
 
