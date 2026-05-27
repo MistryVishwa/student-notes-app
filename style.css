@@ -277,6 +277,10 @@ textarea::placeholder{
     color: color-mix(in srgb, var(--muted-text-color) 80%, transparent);
 
 
+textarea::placeholder{
+    color: color-mix(in srgb, var(--muted-text-color) 80%, transparent);
+
+
 /* Search & filters */
 .search-area{
     margin-top:16px;
