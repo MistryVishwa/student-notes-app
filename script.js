@@ -1,6 +1,15 @@
 let notes = (JSON.parse(localStorage.getItem("notes")) || []).map(n => 
-    typeof n === 'string' ? { text: n, date: "Created: " + new Date().toLocaleString() } : n
+    typeof n === 'string' 
+        ? { text: n, title: "", tags: "", subject: "", folder: "", archived: false, pinned: false, date: "Created: " + new Date().toLocaleString() } 
+        : { 
+            ...n, 
+            pinned: n.pinned || false, 
+            archived: n.archived || false 
+          }
 );
+let folders = JSON.parse(localStorage.getItem("folders")) || [];
+let subjects = JSON.parse(localStorage.getItem("subjects")) || [];
+let attendance = JSON.parse(localStorage.getItem("attendance")) || {};
 
 // Data Migration
 notes = notes.map((note, index) => {
@@ -15,6 +24,7 @@ notes = notes.map((note, index) => {
 localStorage.setItem("notes", JSON.stringify(notes));
 let currentView = "list";
 const THEME_KEY = "theme";
+
 
 let currentView = "list"; // default view
 
@@ -209,6 +219,16 @@ function toggleView() {
 // Note Actions: Add, Display, Edit, Delete
 // ==========================================
 function addNote() {
+
+    const input = document.getElementById("noteInput");
+    const titleInput = document.getElementById("noteTitle");
+    const tagsInput = document.getElementById("noteTags");
+    const subjectInput = document.getElementById("noteSubject");
+    const folderInput = document.getElementById("noteFolder");
+    
+    const noteText = input.value.trim();
+    const titleText = titleInput.value.trim();
+
     let title = document.getElementById("noteTitle").value.trim();
     let noteInputEl = document.getElementById("noteInput");
     let noteText = noteInputEl.value.trim();
@@ -221,6 +241,25 @@ function addNote() {
         return;
     }
 
+
+    notes.push({ 
+        text: noteText, 
+        title: titleText,
+        tags: tagsInput.value,
+        subject: subjectInput.value,
+        date: "Created: " + new Date().toLocaleString() 
+    });
+
+    localStorage.setItem(
+        "notes",
+        JSON.stringify(notes)
+    );
+
+    input.value = "";
+    titleInput.value = "";
+    tagsInput.value = "";
+    subjectInput.value = "";
+
     let newNote = {
         id: Date.now(),
         text: noteText,
@@ -228,11 +267,33 @@ function addNote() {
     if (notes.some(n => n.text === noteText)) {
 
 
-    if (notes.includes(noteText)) {
 
-        alert("This note already exists!");
+    if(noteText === "" && titleText === ""){
+        alert("Please enter a title or note content");
         return;
     }
+
+
+    notes.push({ 
+        text: noteText, 
+        title: titleText,
+        tags: tagsInput.value,
+        subject: subjectInput.value,
+        folder: folderInput.value,
+        archived: false,
+        pinned: false,
+        date: "Created: " + new Date().toLocaleString() 
+    });
+
+    localStorage.setItem(
+        "notes",
+        JSON.stringify(notes)
+    );
+
+    input.value = "";
+    titleInput.value = "";
+    tagsInput.value = "";
+    subjectInput.value = "";
 
     notes.push({ text: noteText, date: "Created: " + new Date().toLocaleString() });
     let dueDate = document.getElementById('noteDueDate')?.value || '';
@@ -275,12 +336,7 @@ function addNote() {
     addGlobalTags(newNote.tags);
     renderSuggestedTags();
 
-    // ensure subject exists in subjects map (use default color if missing)
-    if(newNote.subject && !subjects[newNote.subject]){
-        subjects[newNote.subject] = '#ffd966';
-        try{ localStorage.setItem('subjects', JSON.stringify(subjects)); }catch(e){}
-        try{ renderSubjects(); }catch(e){}
-    }
+    displayNotes();
 }
 
 function displayNotes(){
@@ -359,7 +415,167 @@ function displayNotes(){
             rawHtml = escapeHtml(note.content || '');
         }
 
-        const safeHtml = (window.DOMPurify && DOMPurify.sanitize) ? DOMPurify.sanitize(rawHtml) : rawHtml;
+
+
+    // Sort Logic: Pinned first, then by the selected Sort Order
+    notes.sort((a, b) => {
+        if (a.pinned !== b.pinned) return b.pinned ? 1 : -1;
+        
+        if (sortOrder === "asc") return (a.title || a.text).localeCompare(b.title || b.text);
+        if (sortOrder === "desc") return (b.title || b.text).localeCompare(a.title || a.text);
+        return 0;
+    });
+
+
+    if (notes.length === 0) {
+        container.innerHTML = `
+            <div class="empty-state">
+                <p>No notes found. Start by adding your first note above!</p>
+            </div>
+        `;
+        return;
+    }
+
+    notes.forEach((note,index)=>{
+        if (!!note.archived !== showArchived) return;
+        if (searchQuery) {
+            const matches = 
+                (note.title || "").toLowerCase().includes(searchQuery) ||
+                (note.text || "").toLowerCase().includes(searchQuery) ||
+                (note.tags || "").toLowerCase().includes(searchQuery) ||
+                (note.subject || "").toLowerCase().includes(searchQuery);
+            if (!matches) return;
+        }
+
+        const tagsHtml = note.tags ? note.tags.split(',').map(t => `<span class="note-tag">#${t.trim()}</span>`).join('') : '';
+        
+        container.innerHTML += `
+            <div class="note ${note.pinned ? 'pinned' : ''} ${note.archived ? 'archived' : ''}">
+                <div class="note-actions">
+                    <button class="icon-btn pin-btn" onclick="togglePin(${index})" title="${note.pinned ? 'Unpin' : 'Pin'}">
+                        ${note.pinned ? '📍' : '📌'}
+                    </button>
+                    <button class="icon-btn archive-btn" onclick="toggleArchive(${index})" title="${note.archived ? 'Restore' : 'Archive'}">
+                        ${note.archived ? '📥' : '📦'}
+                    </button>
+                    <button class="icon-btn edit-btn" onclick="editNote(${index})" aria-label="Edit">✎</button>
+                    <button class="icon-btn delete-btn" onclick="deleteNote(${index})" aria-label="Delete">✕</button>
+                </div>
+                ${note.title ? `<strong class="note-title">${escapeHtml(note.title)}</strong>` : ''}
+                <div class="note-text">${renderMarkdown(note.text)}</div>
+                <div class="note-footer" style="margin-top:10px">
+                    ${tagsHtml}
+                </div>
+                <div class="note-date">${note.date}</div>
+            </div>
+        `;
+    });
+}
+
+
+    // Sort Logic: Pinned first, then by the selected Sort Order
+    notes.sort((a, b) => {
+        if (a.pinned !== b.pinned) return b.pinned ? 1 : -1;
+        
+        if (sortOrder === "asc") return (a.title || a.text).localeCompare(b.title || b.text);
+        if (sortOrder === "desc") return (b.title || b.text).localeCompare(a.title || a.text);
+        return 0;
+    });
+
+
+    if (notes.length === 0) {
+        container.innerHTML = `
+            <div class="empty-state">
+                <p>No notes found. Start by adding your first note above!</p>
+            </div>
+        `;
+        return;
+    }
+
+    notes.forEach((note,index)=>{
+        if (!!note.archived !== showArchived) return;
+        if (searchQuery && !note.title.toLowerCase().includes(searchQuery) && !note.text.toLowerCase().includes(searchQuery)) return;
+
+        const tagsHtml = note.tags ? note.tags.split(',').map(t => `<span class="note-tag">#${t.trim()}</span>`).join('') : '';
+        
+        container.innerHTML += `
+            <div class="note ${note.pinned ? 'pinned' : ''} ${note.archived ? 'archived' : ''}">
+                <div class="note-actions">
+                    <button class="icon-btn pin-btn" onclick="togglePin(${index})" title="${note.pinned ? 'Unpin' : 'Pin'}">
+                        ${note.pinned ? '📍' : '📌'}
+                    </button>
+                    <button class="icon-btn archive-btn" onclick="toggleArchive(${index})" title="${note.archived ? 'Restore' : 'Archive'}">
+                        ${note.archived ? '📥' : '📦'}
+                    </button>
+                    <button class="icon-btn edit-btn" onclick="editNote(${index})" aria-label="Edit">✎</button>
+                    <button class="icon-btn delete-btn" onclick="deleteNote(${index})" aria-label="Delete">✕</button>
+                </div>
+                ${note.title ? `<strong class="note-title">${escapeHtml(note.title)}</strong>` : ''}
+                <div class="note-text">${renderMarkdown(note.text)}</div>
+                <div class="note-footer" style="margin-top:10px">
+                    ${tagsHtml}
+                </div>
+                <div class="note-date">${note.date}</div>
+            </div>
+        `;
+    });
+}
+
+
+    // Sort Logic: Pinned first, then by the selected Sort Order
+    notes.sort((a, b) => {
+        if (a.pinned !== b.pinned) return b.pinned ? 1 : -1;
+        
+        if (sortOrder === "asc") return (a.title || a.text).localeCompare(b.title || b.text);
+        if (sortOrder === "desc") return (b.title || b.text).localeCompare(a.title || a.text);
+        return 0;
+    });
+
+
+    if (notes.length === 0) {
+        container.innerHTML = `
+            <div class="empty-state">
+                <p>No notes found. Start by adding your first note above!</p>
+            </div>
+        `;
+        return;
+    }
+
+    notes.forEach((note,index)=>{
+        if (!!note.archived !== showArchived) return;
+        if (searchQuery) {
+            const matches = 
+                (note.title || "").toLowerCase().includes(searchQuery) ||
+                (note.text || "").toLowerCase().includes(searchQuery) ||
+                (note.tags || "").toLowerCase().includes(searchQuery) ||
+                (note.subject || "").toLowerCase().includes(searchQuery);
+            if (!matches) return;
+        }
+
+        const tagsHtml = note.tags ? note.tags.split(',').map(t => `<span class="note-tag">#${t.trim()}</span>`).join('') : '';
+        
+        container.innerHTML += `
+            <div class="note ${note.pinned ? 'pinned' : ''} ${note.archived ? 'archived' : ''}">
+                <div class="note-actions">
+                    <button class="icon-btn pin-btn" onclick="togglePin(${index})" title="${note.pinned ? 'Unpin' : 'Pin'}">
+                        ${note.pinned ? '📍' : '📌'}
+                    </button>
+                    <button class="icon-btn archive-btn" onclick="toggleArchive(${index})" title="${note.archived ? 'Restore' : 'Archive'}">
+                        ${note.archived ? '📥' : '📦'}
+                    </button>
+                    <button class="icon-btn edit-btn" onclick="editNote(${index})" aria-label="Edit">✎</button>
+                    <button class="icon-btn delete-btn" onclick="deleteNote(${index})" aria-label="Delete">✕</button>
+                </div>
+                ${note.title ? `<strong class="note-title">${escapeHtml(note.title)}</strong>` : ''}
+                <div class="note-text">${renderMarkdown(note.text)}</div>
+                <div class="note-footer" style="margin-top:10px">
+                    ${tagsHtml}
+                </div>
+                <div class="note-date">${note.date}</div>
+            </div>
+        `;
+    });
+}
 
 
         // Use a temporary element to perform text-node highlighting
@@ -466,15 +682,6 @@ function togglePin(id) {
     let note = notes.find(n => n.id === id);
     if (note) {
         note.pinned = !note.pinned;
-function editNote(index){
-    let newNote = prompt("Edit your note:", notes[index].text);
-    if(newNote !== null && newNote.trim() !== ""){
-        let trimmedNote = newNote.trim();
-        
-        if (notes.some((n, i) => n.text === trimmedNote && i !== index)) {
-            alert("A note with this text already exists!");
-            return;
-        }
 
         notes[index] = { text: trimmedNote, date: "Edited: " + new Date().toLocaleString() };
     if(pinnedContainer && pinnedSection){
@@ -957,228 +1164,138 @@ function populateFilterSubject(){
     select.value = current || '';
 }
 
-// ---------------------
-// Assignments helpers
-// ---------------------
-function isOverdue(due){
-    if(!due) return false;
-    const today = formatYMD(new Date());
-    return due < today;
-}
 
-function addAssignment(title, subject, due){
-    if(!title || !title.trim()) return false;
-    const id = 'a_' + (Date.now() + Math.floor(Math.random()*1000));
-    assignments.push({ id, title: title.trim(), subject: subject || '', due: formatYMD(due || new Date()), completed: false });
-    saveAssignments();
-    renderAssignments();
-    return true;
-}
-
-function toggleAssignmentComplete(id){
-    const idx = assignments.findIndex(a=> a.id === id);
-    if(idx === -1) return;
-    assignments[idx].completed = !assignments[idx].completed;
-    saveAssignments();
-    renderAssignments();
-}
-
-function removeAssignment(id){
-    assignments = assignments.filter(a=> a.id !== id);
-    saveAssignments();
-    renderAssignments();
-}
-
-function renderAssignments(){
-    const container = document.getElementById('assignmentsList');
-    if(!container) return;
-    if(assignments.length === 0){ container.innerHTML = '<div class="muted">No assignments</div>'; return; }
-    container.innerHTML = assignments.map(a=>{
-        const overdue = !a.completed && isOverdue(a.due);
-        const overdueClass = overdue ? ' assignment-overdue' : '';
-        const subj = a.subject ? `<span class="assignment-meta">${escapeHtml(a.subject)}</span>` : '';
-        const due = a.due ? `<span class="assignment-due${overdueClass}">${escapeHtml(a.due)}</span>` : '';
-        const title = escapeHtml(a.title) + (a.completed ? ' (done)' : '');
-        return `<div class="assignment-row" id="${a.id}">
-            <div>
-                <div class="assignment-title">${title}</div>
-                <div class="assignment-meta">${subj} ${due}</div>
-            </div>
-            <div class="assignment-actions">
-                <button onclick="toggleAssignmentComplete('${a.id}')">${a.completed ? 'Undo' : 'Complete'}</button>
-                <button onclick="removeAssignment('${a.id}')">Remove</button>
-            </div>
-        </div>`;
-    }).join('');
-}
-
-function renderAssignmentSubjectSelect(){
-    const sel = document.getElementById('assignmentSubject');
-    if(!sel) return;
-    const keys = Object.keys(subjects || {});
-    const opts = ['<option value="">Subject</option>'].concat(keys.map(k=>`<option value="${escapeHtml(k)}">${escapeHtml(k)}</option>`));
-    sel.innerHTML = opts.join('');
-}
-
-// ---------------------
-// Attendance helpers
-// ---------------------
-function formatYMD(d){
-    if(!d) return '';
-    const dt = new Date(d);
-    const y = dt.getFullYear();
-    const m = String(dt.getMonth()+1).padStart(2,'0');
-    const day = String(dt.getDate()).padStart(2,'0');
-    return `${y}-${m}-${day}`;
-}
-
-function addAttendanceRecord(subject, dateStr, status){
-    if(!subject) return false;
-    const d = formatYMD(dateStr || new Date());
-    attendance[subject] = attendance[subject] || [];
-    // replace record for date if exists
-    const idx = attendance[subject].findIndex(r=> r.date === d);
-    if(idx !== -1) attendance[subject][idx].status = status;
-    else attendance[subject].push({ date: d, status });
-    saveAttendance();
-    return true;
-}
-
-function getAttendance(subject){
-    return (attendance[subject] || []).slice().sort((a,b)=> a.date.localeCompare(b.date));
-}
-
-function attendancePercent(subject){
-    const recs = attendance[subject] || [];
-    if(!recs.length) return null;
-    const present = recs.filter(r=> r.status === 'present').length;
-    return Math.round((present / recs.length) * 100);
-}
-
-function renderAttendancePanel(){
-    const sel = document.getElementById('attendanceSubject');
-    if(sel){
-        const keys = Object.keys(subjects || {});
-        const opts = ['<option value="">Select subject</option>'].concat(keys.map(k=>`<option value="${escapeHtml(k)}">${escapeHtml(k)}</option>`));
-        sel.innerHTML = opts.join('');
+    if (noteInput) {
+        noteInput.addEventListener("input", updateLivePreview);
     }
-    // summary area
-    const sum = document.getElementById('attendanceSummary');
-    if(!sum) return;
-    const keys = Object.keys(subjects || {});
-    if(!keys.length){ sum.innerHTML = '<div class="muted">No subjects to show attendance</div>'; return; }
-    sum.innerHTML = keys.map(k=>{
-        const pct = attendancePercent(k);
-        const pctText = pct === null ? 'No records' : pct + '%';
-        const warn = (pct !== null && pct < 75) ? ' low-attendance' : '';
-        return `<div class="attendance-row"><div>${escapeHtml(k)}</div><div class="attendance-pct${warn}">${pctText}</div></div>`;
-    }).join('');
-}
 
-// Section editor helpers
-function addSectionBlock(type, content){
-    const list = document.getElementById('sectionsList');
-    if(!list) return;
-    const id = 'sec_' + (Date.now() + Math.floor(Math.random()*1000));
-    const div = document.createElement('div');
-    div.className = 'section-block';
-    div.id = id;
-    div.innerHTML = `
-        <div class="section-header">
-            <div class="section-type">${escapeHtml(type)}</div>
-            <div><button class="section-remove" type="button">Remove</button></div>
-        </div>
-        <div class="section-content">
-            <textarea placeholder="Section content">${escapeHtml(content||'')}</textarea>
-        </div>
-    `;
-    list.appendChild(div);
-    const btn = div.querySelector('.section-remove');
-    if(btn) btn.addEventListener('click', ()=>{ div.remove(); });
-}
-
-function gatherSectionsFromEditor(){
-    const list = document.getElementById('sectionsList');
-    if(!list) return [];
-    const out = [];
-    Array.from(list.children).forEach(block=>{
-        const type = block.querySelector('.section-type')?.textContent || 'section';
-        const content = block.querySelector('textarea')?.value || '';
-        out.push({ type: type.trim().toLowerCase(), content });
-    });
-    return out;
-}
-
-function renderSectionsInEditor(sections){
-    const list = document.getElementById('sectionsList');
-    if(!list) return;
-    list.innerHTML = '';
-    (sections || []).forEach(s=> addSectionBlock(s.type || 'section', s.content || ''));
-}
-function recordRecent(note){
-    if(!note) return;
-    try{
-        const raw = localStorage.getItem('recentNotes');
-        const list = raw ? JSON.parse(raw) : [];
-        const id = String(note.id || note._id || Date.now());
-        // remove existing entry for id
-        const filtered = list.filter(i=> String(i.id) !== id);
-        filtered.unshift({ id, title: note.title || (note.content||'').slice(0,60), ts: Date.now() });
-        // limit to 10
-        const sliced = filtered.slice(0,10);
-        localStorage.setItem('recentNotes', JSON.stringify(sliced));
-        renderRecent();
-    }catch(e){ console.warn('recordRecent error', e); }
-}
-
-function renderRecent(){
-    const container = document.getElementById('recentContainer');
-    if(!container) return;
-    try{
-        const raw = localStorage.getItem('recentNotes');
-        const list = raw ? JSON.parse(raw) : [];
-        if(!list.length){ container.innerHTML = '<div class="empty-state">No recent notes yet.</div>'; return; }
-        container.innerHTML = list.map(item=>{
-            const time = new Date(item.ts).toLocaleString();
-            const title = escapeHtml(item.title || 'Untitled');
-            return `
-                <div class="recent-item">
-                    <div>
-                        <div class="title">${title}</div>
-                        <div class="meta">${time}</div>
-                    </div>
-                    <div>
-                        <button class="open-btn" onclick="openNote('${item.id}')">Open</button>
-                    </div>
-                </div>
-            `;
-        }).join('');
-    }catch(e){ container.innerHTML = '<div class="empty-state">Unable to load recent notes.</div>'; }
-}
-
-function openNote(id){
-    if(!id) return;
-    const idx = notes.findIndex(n=> String(n.id) === String(id));
-    if(idx === -1) {
-        alert('Note not found');
-        return;
+    if (previewToggle) {
+        previewToggle.addEventListener("change", (e) => {
+            const previewDiv = document.getElementById("livePreview");
+            if (previewDiv) {
+                previewDiv.style.display = e.target.checked ? "block" : "none";
+                if (e.target.checked) updateLivePreview();
+            }
+        });
     }
-    const note = notes[idx];
-    // populate editor
-    const titleEl = document.getElementById('noteTitle');
-    const inputEl = document.getElementById('noteInput');
-    const tagsEl = document.getElementById('noteTags');
-    const subjectEl = document.getElementById('noteSubject');
-    if(titleEl) titleEl.value = note.title || '';
-    if(inputEl) inputEl.value = note.content || '';
-    if(tagsEl) tagsEl.value = (note.tags || []).join(', ');
-    if(subjectEl) subjectEl.value = note.subject || '';
-    // focus the editor
-    if(inputEl) inputEl.focus();
-    // record that user opened this note
-    try{ recordRecent(note); }catch(e){}
-    // populate sections editor
-    try{ renderSectionsInEditor(note.sections || []); }catch(e){}
+
+    // Also attach clicks to the sidebar buttons that were missing logic
+    document.getElementById("addFolderBtn")?.addEventListener("click", addFolder);
+    document.getElementById("addSubjectBtn")?.addEventListener("click", addSubject);
+    
+    document.getElementById("markPresentBtn")?.addEventListener("click", () => markAttendance(true));
+    document.getElementById("markAbsentBtn")?.addEventListener("click", () => markAttendance(false));
+
+    document.getElementById("searchInput")?.addEventListener("input", displayNotes);
+}
+
+function addFolder() {
+    const input = document.getElementById("newFolderName");
+    const name = input.value.trim();
+    if (name) {
+        folders.push(name);
+        localStorage.setItem("folders", JSON.stringify(folders));
+        input.value = "";
+        updateSidebar();
+    }
+}
+
+function addSubject() {
+    const input = document.getElementById("newSubjectName");
+    const color = document.getElementById("newSubjectColor").value;
+    const name = input.value.trim();
+    if (name) {
+        subjects.push({ name, color });
+        localStorage.setItem("subjects", JSON.stringify(subjects));
+        input.value = "";
+        updateSidebar();
+    }
+}
+
+function markAttendance(isPresent) {
+    const subject = document.getElementById("attendanceSubject").value;
+    if (!subject) return alert("Please select a subject first!");
+
+    if (!attendance[subject]) attendance[subject] = { present: 0, total: 0 };
+    
+    attendance[subject].total++;
+    if (isPresent) attendance[subject].present++;
+
+    localStorage.setItem("attendance", JSON.stringify(attendance));
+    updateSidebar();
+}
+
+function updateLivePreview() {
+    const input = document.getElementById("noteInput");
+    const preview = document.getElementById("livePreview");
+    const isVisible = document.getElementById("livePreviewToggle")?.checked;
+
+    if (preview && isVisible) {
+        preview.innerHTML = renderMarkdown(input.value || "*Preview will appear here...*");
+    }
+}
+
+function renderMarkdown(text) {
+    if (typeof marked !== 'undefined' && typeof DOMPurify !== 'undefined') {
+        return DOMPurify.sanitize(marked.parse(text));
+    }
+    return escapeHtml(text);
+}
+
+function updateSidebar() {
+    const folderTree = document.getElementById("foldersTree");
+    const subjectList = document.getElementById("subjectsList");
+    const folderSelect = document.getElementById("noteFolder");
+    const attSubjectSelect = document.getElementById("attendanceSubject");
+
+    // Update Attendance Summary
+    let attSummaryHtml = '<div class="attendance-summary">';
+    for (const sub in attendance) {
+        const data = attendance[sub];
+        const percent = ((data.present / data.total) * 100).toFixed(1);
+        attSummaryHtml += `
+            <div class="attendance-item">
+                <span>${escapeHtml(sub)}</span>
+                <span>${percent}% (${data.present}/${data.total})</span>
+            </div>`;
+    }
+    attSummaryHtml += '</div>';
+
+    if (folderTree) folderTree.innerHTML = folders.map(f => `<div class="sidebar-item">📁 ${escapeHtml(f)}</div>`).join('');
+    if (subjectList) subjectList.innerHTML = subjects.map(s => `
+        <div class="sidebar-item">
+            <span class="color-dot" style="background:${s.color}; display:inline-block; width:10px; height:10px; border-radius:50%; margin-right:8px"></span>
+            ${escapeHtml(s.name)}
+        </div>`).join('');
+    
+    const attPanel = document.getElementById("attendancePanel");
+    const existingSummary = attPanel.querySelector('.attendance-summary');
+    if (existingSummary) existingSummary.remove();
+    attPanel.insertAdjacentHTML('beforeend', attSummaryHtml);
+    
+    if (folderSelect) {
+        folderSelect.innerHTML = '<option value="">No folder</option>' + folders.map(f => `<option value="${f}">${f}</option>`).join('');
+    }
+
+    if (attSubjectSelect) {
+        attSubjectSelect.innerHTML = '<option value="">Subject</option>' + subjects.map(s => `<option value="${s.name}">${s.name}</option>`).join('');
+    }
+}
+
+/**
+ * Toggles a predefined tag in the tags input field
+ */
+function addQuickTag(tag) {
+    const tagsInput = document.getElementById("noteTags");
+    let currentTags = tagsInput.value.split(',').map(t => t.trim()).filter(t => t !== "");
+    
+    const tagIndex = currentTags.indexOf(tag);
+    if (tagIndex === -1) {
+        currentTags.push(tag);
+    } else {
+        currentTags.splice(tagIndex, 1);
+    }
+    tagsInput.value = currentTags.join(', ');
 }
 
 // Render recent on load
