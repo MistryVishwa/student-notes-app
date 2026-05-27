@@ -1,38 +1,247 @@
-<!doctype html>
-<html lang="en">
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
 <head>
-  <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width,initial-scale=1">
-  <title>Mind Map — Student Notes App</title>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Mind Map — Student Notes</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Google+Sans:wght@400;500;700&family=Roboto:wght@300;400;500&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/icon?family=Material+Icons+Outlined" rel="stylesheet">
   <link rel="stylesheet" href="style.css">
-  <style>
-    .mindmap-container{ height:75vh; border:1px dashed rgba(0,0,0,0.08); border-radius:8px; position:relative; background:transparent; overflow:hidden }
-    .mm-node{ position:absolute; min-width:110px; padding:10px 12px; border-radius:10px; background:linear-gradient(180deg,#fff,#f7f7ff); border:1px solid rgba(79,70,229,0.08); box-shadow:0 6px 18px rgba(59,130,246,0.06); cursor:grab }
-    .mm-node.dragging{ opacity:0.7; cursor:grabbing }
-    .mm-toolbar{ display:flex; gap:8px; align-items:center; margin-bottom:12px }
-  </style>
+  <script src="auth.js"></script>
+  <script>
+    authRequire('mindmap.html');
+  </script>
 </head>
 <body>
-  <div class="container">
-    <header class="site-header">
-      <h1>Mind Map</h1>
-      <div class="page-links"><a class="nav-link" href="index.html">← Back</a></div>
-    </header>
 
-    <main>
-      <div class="mm-toolbar">
-        <input id="nodeText" placeholder="Node text" style="padding:8px 10px; border-radius:8px; border:1px solid #ddd; flex:1">
-        <button id="addNodeBtn">Add Node</button>
-        <button id="clearNodes">Clear</button>
-        <button id="exportMap">Export JSON</button>
-      </div>
-
-      <div id="mindmap" class="mindmap-container" aria-label="Mind map canvas"></div>
-
-      <pre id="exportArea" style="margin-top:12px; display:none; white-space:pre-wrap; background:#f8f9fb; padding:10px; border-radius:6px"></pre>
-    </main>
+<!-- ═══════════════════════════════════════════════════
+     TOP NAVIGATION BAR
+     ═══════════════════════════════════════════════════ -->
+<nav class="gk-navbar" role="navigation" aria-label="Main navigation">
+  <div class="navbar-left">
+    <button class="hamburger-btn icon-btn" id="sidebarToggle" aria-label="Toggle sidebar" title="Menu">
+      <span class="material-icons-outlined">menu</span>
+    </button>
+    <a href="index.html" class="navbar-logo" aria-label="Student Notes Home">
+      <div class="navbar-logo-icon">📝</div>
+      <span class="navbar-logo-text">Student Notes</span>
+    </a>
   </div>
 
-  <script src="mindmap.js"></script>
+  <div class="navbar-search" style="visibility: hidden;">
+    <span class="search-icon" aria-hidden="true"><span class="material-icons-outlined">search</span></span>
+    <input type="search" placeholder="Search" disabled>
+  </div>
+
+  <div class="navbar-right">
+    <!-- Dark/Light toggle -->
+    <button class="icon-btn" id="themeToggleBtn" title="Toggle dark/light mode" aria-label="Toggle theme"><span class="material-icons-outlined">dark_mode</span></button>
+
+    <!-- Auth: shown when NOT logged in -->
+    <a href="auth.html" id="navSignInBtn" class="btn-signin-nav hidden" aria-label="Sign in">Sign in</a>
+
+    <!-- Auth: shown when logged in -->
+    <button class="avatar-btn" id="navAvatarBtn" aria-label="User menu" aria-haspopup="true" aria-expanded="false">U</button>
+  </div>
+</nav>
+
+<!-- User Dropdown -->
+<div class="user-dropdown hidden" id="userDropdown" role="menu">
+  <div class="user-dropdown-header">
+    <div class="user-dropdown-avatar" id="dropdownAvatar">U</div>
+    <div class="user-dropdown-name" id="dropdownName">User</div>
+    <div class="user-dropdown-email" id="dropdownEmail"></div>
+  </div>
+  <button class="user-dropdown-item" role="menuitem" onclick="handleLogout()">
+    <span class="material-icons-outlined">logout</span> Sign out
+  </button>
+</div>
+
+<!-- ═══════════════════════════════════════════════════
+     LEFT SIDEBAR
+     ═══════════════════════════════════════════════════ -->
+<aside class="gk-sidebar" id="sidebar" role="complementary" aria-label="Navigation sidebar">
+
+  <a class="sidebar-nav-item" id="navNotes" href="index.html" aria-label="Notes">
+    <span class="nav-icon"><span class="material-icons-outlined">lightbulb</span></span>
+    <span class="nav-label">Notes</span>
+  </a>
+
+  <a class="sidebar-nav-item" id="navReminders" href="index.html?view=reminders" aria-label="Reminders">
+    <span class="nav-icon"><span class="material-icons-outlined">notifications</span></span>
+    <span class="nav-label">Reminders</span>
+  </a>
+
+  <div class="sidebar-section-title">Labels</div>
+
+  <div id="sidebarLabels">
+    <!-- Dynamically populated -->
+  </div>
+
+  <a class="sidebar-nav-item" href="index.html" aria-label="Edit labels">
+    <span class="nav-icon"><span class="material-icons-outlined">edit</span></span>
+    <span class="nav-label">Edit labels</span>
+  </a>
+
+  <div class="sidebar-divider"></div>
+
+  <a class="sidebar-nav-item" id="navArchive" href="index.html?view=archive" aria-label="Archive">
+    <span class="nav-icon"><span class="material-icons-outlined">archive</span></span>
+    <span class="nav-label">Archive</span>
+  </a>
+
+  <a class="sidebar-nav-item" id="navTrash" href="index.html?view=trash" aria-label="Trash">
+    <span class="nav-icon"><span class="material-icons-outlined">delete</span></span>
+    <span class="nav-label">Trash</span>
+  </a>
+
+  <div class="sidebar-divider"></div>
+
+  <!-- Protected: Weekly Self Test -->
+  <a class="sidebar-nav-item" id="navSelfTest" href="self-test.html" aria-label="Weekly Self Test">
+    <span class="nav-icon"><span class="material-icons-outlined">assignment</span></span>
+    <span class="nav-label">Weekly Self Test</span>
+  </a>
+
+  <!-- Protected: Mind Map (ACTIVE) -->
+  <a class="sidebar-nav-item active" id="navMindMap" href="mindmap.html" aria-label="Mind Map">
+    <span class="nav-icon"><span class="material-icons-outlined">map</span></span>
+    <span class="nav-label">Mind Map</span>
+  </a>
+
+</aside>
+
+<!-- Mobile sidebar overlay -->
+<div class="modal-overlay" id="sidebarOverlay" onclick="closeSidebar()" style="z-index:99;"></div>
+
+<!-- ═══════════════════════════════════════════════════
+     MAIN CONTENT
+     ═══════════════════════════════════════════════════ -->
+<main class="gk-main">
+  <div style="max-width: 1100px; margin: 0 auto; padding: 12px 16px;">
+    
+    <h1 style="margin: 0 0 24px 0; font-size: 1.6rem; font-weight: 500; color: var(--text);">Mind Map</h1>
+
+    <!-- Mindmap Toolbar -->
+    <div class="mm-toolbar" style="background: var(--surface2); border: 1px solid var(--border-soft); padding: 12px 20px; border-radius: 12px;">
+      <input id="nodeText" placeholder="Enter node text..." style="flex: 1; border-radius: 8px;">
+      <button id="addNodeBtn" style="border-radius: 20px;">Add Node</button>
+      <button id="clearNodes" style="border-radius: 20px;">Clear Map</button>
+      <button id="exportMap" style="border-radius: 20px;">Export JSON</button>
+    </div>
+
+    <!-- Canvas -->
+    <div id="mindmap" class="mindmap-container" aria-label="Mind map canvas"></div>
+
+    <!-- Export display block -->
+    <pre id="exportArea" style="margin-top: 16px; display: none; white-space: pre-wrap; background: var(--surface2); border: 1px solid var(--border); color: var(--text); padding: 16px; border-radius: 12px; font-family: monospace; font-size: 0.85rem; max-height: 200px; overflow-y: auto;"></pre>
+
+  </div>
+</main>
+
+<script>
+  // Common UI Layout Scripts for Sidebar/Theme/Auth
+  const sidebar = document.getElementById('sidebar');
+  const sidebarToggle = document.getElementById('sidebarToggle');
+  const sidebarOverlay = document.getElementById('sidebarOverlay');
+  const themeToggleBtn = document.getElementById('themeToggleBtn');
+
+  function toggleSidebar() {
+    sidebar?.classList.toggle('collapsed');
+    sidebarOverlay?.classList.toggle('open');
+  }
+
+  function closeSidebar() {
+    sidebar?.classList.add('collapsed');
+    sidebarOverlay?.classList.remove('open');
+  }
+
+  sidebarToggle?.addEventListener('click', toggleSidebar);
+  sidebarOverlay?.addEventListener('click', closeSidebar);
+
+  function initTheme() {
+    const saved = localStorage.getItem('sna_theme') || 'dark';
+    document.documentElement.setAttribute('data-theme', saved);
+    if (themeToggleBtn) {
+      themeToggleBtn.innerHTML = saved === 'dark' 
+        ? '<span class="material-icons-outlined">light_mode</span>' 
+        : '<span class="material-icons-outlined">dark_mode</span>';
+    }
+  }
+
+  themeToggleBtn?.addEventListener('click', () => {
+    const current = document.documentElement.getAttribute('data-theme') || 'dark';
+    const next = current === 'dark' ? 'light' : 'dark';
+    document.documentElement.setAttribute('data-theme', next);
+    localStorage.setItem('sna_theme', next);
+    if (themeToggleBtn) {
+      themeToggleBtn.innerHTML = next === 'dark' 
+        ? '<span class="material-icons-outlined">light_mode</span>' 
+        : '<span class="material-icons-outlined">dark_mode</span>';
+    }
+  });
+
+  initTheme();
+
+  function initAuthHeader() {
+    const user = authGetCurrentUser();
+    const signInBtn = document.getElementById('navSignInBtn');
+    const avatarBtn = document.getElementById('navAvatarBtn');
+    if (user) {
+      signInBtn?.classList.add('hidden');
+      if (avatarBtn) {
+        avatarBtn.classList.remove('hidden');
+        avatarBtn.textContent = user.avatar || user.name?.charAt(0)?.toUpperCase() || 'U';
+      }
+      const dropdownName = document.getElementById('dropdownName');
+      const dropdownEmail = document.getElementById('dropdownEmail');
+      const dropdownAvatar = document.getElementById('dropdownAvatar');
+      if (dropdownName) dropdownName.textContent = user.name || 'User';
+      if (dropdownEmail) dropdownEmail.textContent = user.email || '';
+      if (dropdownAvatar) dropdownAvatar.textContent = user.avatar || 'U';
+    } else {
+      signInBtn?.classList.remove('hidden');
+      avatarBtn?.classList.add('hidden');
+    }
+    
+    avatarBtn?.addEventListener('click', (e) => {
+      e.stopPropagation();
+      const dd = document.getElementById('userDropdown');
+      dd?.classList.toggle('hidden');
+    });
+    
+    document.addEventListener('click', () => {
+      document.getElementById('userDropdown')?.classList.add('hidden');
+    });
+  }
+
+  function handleLogout() {
+    authLogout();
+    window.location.reload();
+  }
+
+  function renderSidebarLabels() {
+    const sidebarLabels = document.getElementById('sidebarLabels');
+    if (!sidebarLabels) return;
+    let labels = [];
+    try { labels = JSON.parse(localStorage.getItem('sna_labels')) || []; } catch(e) {}
+    sidebarLabels.innerHTML = labels.map(l => `
+      <a class="sidebar-nav-item" href="index.html?label=${l.id}">
+        <span class="nav-icon"><span class="material-icons-outlined">label</span></span>
+        <span class="nav-label">${escHtml(l.name)}</span>
+      </a>
+    `).join('');
+  }
+
+  function escHtml(str) {
+    return String(str || '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+  }
+
+  initAuthHeader();
+  renderSidebarLabels();
+</script>
+<script src="mindmap.js"></script>
 </body>
 </html>

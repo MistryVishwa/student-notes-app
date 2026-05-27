@@ -1,67 +1,285 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en" data-theme="dark">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Weekly Self Test</title>
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="style.css">
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Weekly Self Test — Student Notes</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Google+Sans:wght@400;500;700&family=Roboto:wght@300;400;500&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/icon?family=Material+Icons+Outlined" rel="stylesheet">
+  <link rel="stylesheet" href="style.css">
+  <script src="auth.js"></script>
+  <script>
+    authRequire('self-test.html');
+  </script>
 </head>
 <body>
 
+<!-- ═══════════════════════════════════════════════════
+     TOP NAVIGATION BAR
+     ═══════════════════════════════════════════════════ -->
+<nav class="gk-navbar" role="navigation" aria-label="Main navigation">
+  <div class="navbar-left">
+    <button class="hamburger-btn icon-btn" id="sidebarToggle" aria-label="Toggle sidebar" title="Menu">
+      <span class="material-icons-outlined">menu</span>
+    </button>
+    <a href="index.html" class="navbar-logo" aria-label="Student Notes Home">
+      <div class="navbar-logo-icon">📝</div>
+      <span class="navbar-logo-text">Student Notes</span>
+    </a>
+  </div>
+
+  <div class="navbar-search" style="visibility: hidden;">
+    <span class="search-icon" aria-hidden="true"><span class="material-icons-outlined">search</span></span>
+    <input type="search" placeholder="Search" disabled>
+  </div>
+
+  <div class="navbar-right">
+    <!-- Dark/Light toggle -->
+    <button class="icon-btn" id="themeToggleBtn" title="Toggle dark/light mode" aria-label="Toggle theme"><span class="material-icons-outlined">dark_mode</span></button>
+
+    <!-- Auth: shown when NOT logged in -->
+    <a href="auth.html" id="navSignInBtn" class="btn-signin-nav hidden" aria-label="Sign in">Sign in</a>
+
+    <!-- Auth: shown when logged in -->
+    <button class="avatar-btn" id="navAvatarBtn" aria-label="User menu" aria-haspopup="true" aria-expanded="false">U</button>
+  </div>
+</nav>
+
+<!-- User Dropdown -->
+<div class="user-dropdown hidden" id="userDropdown" role="menu">
+  <div class="user-dropdown-header">
+    <div class="user-dropdown-avatar" id="dropdownAvatar">U</div>
+    <div class="user-dropdown-name" id="dropdownName">User</div>
+    <div class="user-dropdown-email" id="dropdownEmail"></div>
+  </div>
+  <button class="user-dropdown-item" role="menuitem" onclick="handleLogout()">
+    <span class="material-icons-outlined">logout</span> Sign out
+  </button>
 </div>
 
-    <div class="container">
-        <div class="topbar">
-            <a class="nav-link" href="index.html">← Notes</a>
-            <div class="timer" aria-live="polite">
-                Time left: <span id="timerValue">--:--</span>
-            </div>
+<!-- ═══════════════════════════════════════════════════
+     LEFT SIDEBAR
+     ═══════════════════════════════════════════════════ -->
+<aside class="gk-sidebar" id="sidebar" role="complementary" aria-label="Navigation sidebar">
+
+  <a class="sidebar-nav-item" id="navNotes" href="index.html" aria-label="Notes">
+    <span class="nav-icon"><span class="material-icons-outlined">lightbulb</span></span>
+    <span class="nav-label">Notes</span>
+  </a>
+
+  <a class="sidebar-nav-item" id="navReminders" href="index.html?view=reminders" aria-label="Reminders">
+    <span class="nav-icon"><span class="material-icons-outlined">notifications</span></span>
+    <span class="nav-label">Reminders</span>
+  </a>
+
+  <div class="sidebar-section-title">Labels</div>
+
+  <div id="sidebarLabels">
+    <!-- Dynamically populated -->
+  </div>
+
+  <a class="sidebar-nav-item" href="index.html" aria-label="Edit labels">
+    <span class="nav-icon"><span class="material-icons-outlined">edit</span></span>
+    <span class="nav-label">Edit labels</span>
+  </a>
+
+  <div class="sidebar-divider"></div>
+
+  <a class="sidebar-nav-item" id="navArchive" href="index.html?view=archive" aria-label="Archive">
+    <span class="nav-icon"><span class="material-icons-outlined">archive</span></span>
+    <span class="nav-label">Archive</span>
+  </a>
+
+  <a class="sidebar-nav-item" id="navTrash" href="index.html?view=trash" aria-label="Trash">
+    <span class="nav-icon"><span class="material-icons-outlined">delete</span></span>
+    <span class="nav-label">Trash</span>
+  </a>
+
+  <div class="sidebar-divider"></div>
+
+  <!-- Protected: Weekly Self Test (ACTIVE) -->
+  <a class="sidebar-nav-item active" id="navSelfTest" href="self-test.html" aria-label="Weekly Self Test">
+    <span class="nav-icon"><span class="material-icons-outlined">assignment</span></span>
+    <span class="nav-label">Weekly Self Test</span>
+  </a>
+
+  <!-- Protected: Mind Map -->
+  <a class="sidebar-nav-item" id="navMindMap" href="mindmap.html" aria-label="Mind Map">
+    <span class="nav-icon"><span class="material-icons-outlined">map</span></span>
+    <span class="nav-label">Mind Map</span>
+  </a>
+
+</aside>
+
+<!-- Mobile sidebar overlay -->
+<div class="modal-overlay" id="sidebarOverlay" onclick="closeSidebar()" style="z-index:99;"></div>
+
+<!-- ═══════════════════════════════════════════════════
+     MAIN CONTENT
+     ═══════════════════════════════════════════════════ -->
+<main class="gk-main">
+  <div style="max-width: 720px; margin: 0 auto; padding: 12px 16px;">
+    
+    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 24px;">
+      <h1 style="margin: 0; font-size: 1.6rem; font-weight: 500; color: var(--text);">Weekly Self Test</h1>
+      <div style="display: flex; align-items: center; gap: 16px; background: var(--surface2); border: 1px solid var(--border-soft); padding: 8px 16px; border-radius: 20px;">
+        <span class="material-icons-outlined" style="color: var(--accent); font-size: 20px;">timer</span>
+        <div class="timer" aria-live="polite" style="font-weight: 500; font-family: 'Roboto', sans-serif; font-size: 0.95rem; color: var(--text);">
+          Time left: <span id="timerValue" style="color: var(--accent);">--:--</span>
         </div>
-
-        <h1>Weekly Self Test</h1>
-
-        <div class="selftest-controls">
-            <label class="checkbox">
-                <input type="checkbox" id="practiceMode" />
-                Practice Mode (results not saved)
-            </label>
-        </div>
-
-        <div id="questionCard" class="card" role="region" aria-label="Question"></div>
-
-        <div class="selftest-nav">
-            <button id="prevBtn" type="button">Previous</button>
-            <button id="nextBtn" type="button">Next</button>
-        </div>
-
-        <div style="margin-top:12px">
-            <button id="submitBtn" type="button">Submit Test</button>
-        </div>
-
-        <div id="resultCard" class="card" hidden></div>
-
-        <div class="card" aria-label="Performance dashboard">
-            <h2 class="card-title">Performance Dashboard</h2>
-            <div class="stats">
-                <div class="stat">
-                    <div class="stat-label">Total tests attempted</div>
-                    <div class="stat-value" id="totalAttempts">0</div>
-                </div>
-                <div class="stat">
-                    <div class="stat-label">Last score</div>
-                    <div class="stat-value" id="lastScore">—</div>
-                </div>
-                <div class="stat">
-                    <div class="stat-label">Average score</div>
-                    <div class="stat-value" id="avgScore">—</div>
-                </div>
-            </div>
-        </div>
+      </div>
     </div>
 
+    <!-- Controls -->
+    <div style="margin-bottom: 20px; display: flex; align-items: center; justify-content: space-between; background: var(--surface2); border: 1px solid var(--border-soft); padding: 12px 20px; border-radius: 12px;">
+      <label class="checkbox" style="display: flex; align-items: center; gap: 8px; cursor: pointer; color: var(--text2); font-size: 0.9rem;">
+        <input type="checkbox" id="practiceMode" style="accent-color: var(--accent); cursor: pointer;">
+        Practice Mode (results not saved)
+      </label>
+    </div>
+
+    <!-- Question Card -->
+    <div id="questionCard" class="note-card" style="padding: 24px; border-radius: 16px; border: 1px solid var(--border); background: var(--surface2); margin-bottom: 20px;" role="region" aria-label="Question"></div>
+
+    <!-- Nav buttons -->
+    <div class="selftest-nav" style="margin-bottom: 24px;">
+      <button id="prevBtn" type="button" style="border: 1px solid var(--border); background: var(--surface2); color: var(--text); border-radius: 24px; padding: 10px 24px; font-weight: 500; cursor: pointer; font-size: 0.9rem; transition: background 0.2s;">Previous</button>
+      <button id="nextBtn" type="button" style="border: 1px solid var(--border); background: var(--surface2); color: var(--text); border-radius: 24px; padding: 10px 24px; font-weight: 500; cursor: pointer; font-size: 0.9rem; transition: background 0.2s;">Next</button>
+    </div>
+
+    <!-- Submit Action -->
+    <div style="margin-bottom: 28px; text-align: center;">
+      <button id="submitBtn" type="button" style="width: 100%; border: none; background: var(--accent); color: #000; border-radius: 24px; padding: 12px 24px; font-weight: 600; cursor: pointer; font-size: 0.95rem; box-shadow: 0 4px 12px rgba(var(--accent-rgb), 0.2); transition: transform 0.2s;">Submit Test</button>
+    </div>
+
+    <!-- Results Block -->
+    <div id="resultCard" class="note-card" style="padding: 24px; border-radius: 16px; border: 1px solid var(--border); background: var(--surface2); margin-bottom: 28px;" hidden></div>
+
+    <!-- Dashboard -->
+    <div class="note-card" style="padding: 24px; border-radius: 16px; border: 1px solid var(--border); background: var(--surface2);" aria-label="Performance dashboard">
+      <h2 style="margin-top: 0; margin-bottom: 16px; font-size: 1.15rem; font-weight: 500; color: var(--text);">Performance Dashboard</h2>
+      <div class="stats" style="display: flex; gap: 16px; width: 100%;">
+        <div class="stat" style="flex: 1; background: var(--surface3); border: 1px solid var(--border-soft); border-radius: 12px; padding: 16px; text-align: center;">
+          <div class="stat-label" style="font-size: 0.8rem; color: var(--text2); margin-bottom: 4px;">Total Attempted</div>
+          <div class="stat-value" id="totalAttempts" style="font-size: 1.5rem; font-weight: 700; color: var(--text);">0</div>
+        </div>
+        <div class="stat" style="flex: 1; background: var(--surface3); border: 1px solid var(--border-soft); border-radius: 12px; padding: 16px; text-align: center;">
+          <div class="stat-label" style="font-size: 0.8rem; color: var(--text2); margin-bottom: 4px;">Last Score</div>
+          <div class="stat-value" id="lastScore" style="font-size: 1.5rem; font-weight: 700; color: var(--accent);">—</div>
+        </div>
+        <div class="stat" style="flex: 1; background: var(--surface3); border: 1px solid var(--border-soft); border-radius: 12px; padding: 16px; text-align: center;">
+          <div class="stat-label" style="font-size: 0.8rem; color: var(--text2); margin-bottom: 4px;">Average Score</div>
+          <div class="stat-value" id="avgScore" style="font-size: 1.5rem; font-weight: 700; color: var(--accent);">—</div>
+        </div>
+      </div>
+    </div>
+
+  </div>
+</main>
+
+<script>
+  // Common UI Layout Scripts for Sidebar/Theme/Auth
+  const sidebar = document.getElementById('sidebar');
+  const sidebarToggle = document.getElementById('sidebarToggle');
+  const sidebarOverlay = document.getElementById('sidebarOverlay');
+  const themeToggleBtn = document.getElementById('themeToggleBtn');
+
+  function toggleSidebar() {
+    sidebar?.classList.toggle('collapsed');
+    sidebarOverlay?.classList.toggle('open');
+  }
+
+  function closeSidebar() {
+    sidebar?.classList.add('collapsed');
+    sidebarOverlay?.classList.remove('open');
+  }
+
+  sidebarToggle?.addEventListener('click', toggleSidebar);
+  sidebarOverlay?.addEventListener('click', closeSidebar);
+
+  function initTheme() {
+    const saved = localStorage.getItem('sna_theme') || 'dark';
+    document.documentElement.setAttribute('data-theme', saved);
+    if (themeToggleBtn) {
+      themeToggleBtn.innerHTML = saved === 'dark' 
+        ? '<span class="material-icons-outlined">light_mode</span>' 
+        : '<span class="material-icons-outlined">dark_mode</span>';
+    }
+  }
+
+  themeToggleBtn?.addEventListener('click', () => {
+    const current = document.documentElement.getAttribute('data-theme') || 'dark';
+    const next = current === 'dark' ? 'light' : 'dark';
+    document.documentElement.setAttribute('data-theme', next);
+    localStorage.setItem('sna_theme', next);
+    if (themeToggleBtn) {
+      themeToggleBtn.innerHTML = next === 'dark' 
+        ? '<span class="material-icons-outlined">light_mode</span>' 
+        : '<span class="material-icons-outlined">dark_mode</span>';
+    }
+  });
+
+  initTheme();
+
+  function initAuthHeader() {
+    const user = authGetCurrentUser();
+    const signInBtn = document.getElementById('navSignInBtn');
+    const avatarBtn = document.getElementById('navAvatarBtn');
+    if (user) {
+      signInBtn?.classList.add('hidden');
+      if (avatarBtn) {
+        avatarBtn.classList.remove('hidden');
+        avatarBtn.textContent = user.avatar || user.name?.charAt(0)?.toUpperCase() || 'U';
+      }
+      const dropdownName = document.getElementById('dropdownName');
+      const dropdownEmail = document.getElementById('dropdownEmail');
+      const dropdownAvatar = document.getElementById('dropdownAvatar');
+      if (dropdownName) dropdownName.textContent = user.name || 'User';
+      if (dropdownEmail) dropdownEmail.textContent = user.email || '';
+      if (dropdownAvatar) dropdownAvatar.textContent = user.avatar || 'U';
+    } else {
+      signInBtn?.classList.remove('hidden');
+      avatarBtn?.classList.add('hidden');
+    }
+    
+    avatarBtn?.addEventListener('click', (e) => {
+      e.stopPropagation();
+      const dd = document.getElementById('userDropdown');
+      dd?.classList.toggle('hidden');
+    });
+    
+    document.addEventListener('click', () => {
+      document.getElementById('userDropdown')?.classList.add('hidden');
+    });
+  }
+
+  function handleLogout() {
+    authLogout();
+    window.location.reload();
+  }
+
+  function renderSidebarLabels() {
+    const sidebarLabels = document.getElementById('sidebarLabels');
+    if (!sidebarLabels) return;
+    let labels = [];
+    try { labels = JSON.parse(localStorage.getItem('sna_labels')) || []; } catch(e) {}
+    sidebarLabels.innerHTML = labels.map(l => `
+      <a class="sidebar-nav-item" href="index.html?label=${l.id}">
+        <span class="nav-icon"><span class="material-icons-outlined">label</span></span>
+        <span class="nav-label">${escHtml(l.name)}</span>
+      </a>
+    `).join('');
+  }
+
+  function escHtml(str) {
+    return String(str || '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+  }
+
+  initAuthHeader();
+  renderSidebarLabels();
+</script>
 <script src="self-test.js"></script>
 </body>
 </html>
