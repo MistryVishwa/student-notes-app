@@ -1,317 +1,347 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en" data-theme="dark">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Notes App</title>
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="style.css">
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Student Notes — Keep Your Ideas</title>
+  <meta name="description" content="A powerful Google Keep-style notes app for students. Take notes, create checklists, label and organize your study material.">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Google+Sans:wght@400;500;700&family=Roboto:wght@300;400;500&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/icon?family=Material+Icons+Outlined" rel="stylesheet">
+  <link rel="stylesheet" href="style.css">
 </head>
 <body>
-    <div class="container">
-    <header class="site-header">
-      <h1>Student Notes App</h1>
-      <div class="page-links">
-        <a class="nav-link" href="self-test.html">Weekly Self Test →</a>
-      </div>
-    </header>
 
-    <main class="main-content">
-      <aside class="sidebar">
-        <h3>Folders</h3>
-        <div id="foldersTree"></div>
-        <div style="margin-top:10px; display:flex; gap:8px">
-          <input id="newFolderName" placeholder="New folder name" style="flex:1; padding:6px" />
-          <button id="addFolderBtn" type="button">Add</button>
+<!-- ═══════════════════════════════════════════════════
+     TOP NAVIGATION BAR
+     ═══════════════════════════════════════════════════ -->
+<nav class="gk-navbar" role="navigation" aria-label="Main navigation">
+  <div class="navbar-left">
+    <button class="hamburger-btn icon-btn" id="sidebarToggle" aria-label="Toggle sidebar" title="Menu">
+      <span class="material-icons-outlined">menu</span>
+    </button>
+    <a href="index.html" class="navbar-logo" aria-label="Student Notes Home">
+      <div class="navbar-logo-icon">📝</div>
+      <span class="navbar-logo-text">Student Notes</span>
+    </a>
+  </div>
+
+  <div class="navbar-search">
+    <span class="search-icon" aria-hidden="true"><span class="material-icons-outlined">search</span></span>
+    <input
+      type="search"
+      id="searchInput"
+      placeholder="Search notes"
+      autocomplete="off"
+      aria-label="Search notes"
+    >
+    <button class="search-clear-btn" id="searchClearBtn" aria-label="Clear search"><span class="material-icons-outlined">close</span></button>
+  </div>
+
+  <div class="navbar-right">
+    <!-- View toggle -->
+    <div class="view-btns" role="group" aria-label="View mode">
+      <button class="view-btn active" id="gridViewBtn" title="Grid view" aria-label="Grid view" onclick="setView('grid')"><span class="material-icons-outlined">grid_view</span></button>
+      <button class="view-btn" id="listViewBtn" title="List view" aria-label="List view" onclick="setView('list')"><span class="material-icons-outlined">view_agenda</span></button>
+    </div>
+
+    <!-- Dark/Light toggle -->
+    <button class="icon-btn" id="themeToggleBtn" title="Toggle dark/light mode" aria-label="Toggle theme"><span class="material-icons-outlined">dark_mode</span></button>
+
+    <!-- Auth: shown when NOT logged in -->
+    <a href="auth.html" id="navSignInBtn" class="btn-signin-nav" aria-label="Sign in">Sign in</a>
+
+    <!-- Auth: shown when logged in -->
+    <button class="avatar-btn hidden" id="navAvatarBtn" aria-label="User menu" aria-haspopup="true" aria-expanded="false">A</button>
+  </div>
+</nav>
+
+<!-- User Dropdown -->
+<div class="user-dropdown hidden" id="userDropdown" role="menu">
+  <div class="user-dropdown-header">
+    <div class="user-dropdown-avatar" id="dropdownAvatar">A</div>
+    <div class="user-dropdown-name" id="dropdownName">User</div>
+    <div class="user-dropdown-email" id="dropdownEmail"></div>
+  </div>
+  <button class="user-dropdown-item" role="menuitem" onclick="handleLogout()">
+    <span class="material-icons-outlined">logout</span> Sign out
+  </button>
+</div>
+
+<!-- ═══════════════════════════════════════════════════
+     LEFT SIDEBAR
+     ═══════════════════════════════════════════════════ -->
+<aside class="gk-sidebar" id="sidebar" role="complementary" aria-label="Navigation sidebar">
+
+  <button class="sidebar-nav-item active" id="navNotes" onclick="showView('notes')" aria-label="Notes">
+    <span class="nav-icon"><span class="material-icons-outlined">lightbulb</span></span>
+    <span class="nav-label">Notes</span>
+  </button>
+
+  <button class="sidebar-nav-item" id="navReminders" onclick="showView('reminders')" aria-label="Reminders">
+    <span class="nav-icon"><span class="material-icons-outlined">notifications</span></span>
+    <span class="nav-label">Reminders</span>
+  </button>
+
+  <div class="sidebar-section-title">Labels</div>
+
+  <div id="sidebarLabels">
+    <!-- Dynamically populated -->
+  </div>
+
+  <button class="sidebar-nav-item" id="navManageLabels" onclick="openLabelsModal()" aria-label="Edit labels">
+    <span class="nav-icon"><span class="material-icons-outlined">edit</span></span>
+    <span class="nav-label">Edit labels</span>
+  </button>
+
+  <div class="sidebar-divider"></div>
+
+  <button class="sidebar-nav-item" id="navArchive" onclick="showView('archive')" aria-label="Archive">
+    <span class="nav-icon"><span class="material-icons-outlined">archive</span></span>
+    <span class="nav-label">Archive</span>
+  </button>
+
+  <button class="sidebar-nav-item" id="navTrash" onclick="showView('trash')" aria-label="Trash">
+    <span class="nav-icon"><span class="material-icons-outlined">delete</span></span>
+    <span class="nav-label">Trash</span>
+  </button>
+
+  <div class="sidebar-divider"></div>
+
+  <!-- Protected: Weekly Self Test -->
+  <a class="sidebar-nav-item" id="navSelfTest" href="self-test.html" onclick="checkProtected(event, 'self-test.html')" aria-label="Weekly Self Test">
+    <span class="nav-icon"><span class="material-icons-outlined">assignment</span></span>
+    <span class="nav-label">Weekly Self Test</span>
+  </a>
+
+  <!-- Protected: Mind Map -->
+  <a class="sidebar-nav-item" id="navMindMap" href="mindmap.html" onclick="checkProtected(event, 'mindmap.html')" aria-label="Mind Map">
+    <span class="nav-icon"><span class="material-icons-outlined">map</span></span>
+    <span class="nav-label">Mind Map</span>
+  </a>
+
+</aside>
+
+<!-- Mobile sidebar overlay -->
+<div class="modal-overlay" id="sidebarOverlay" onclick="closeSidebar()" style="z-index:99;"></div>
+
+<!-- ═══════════════════════════════════════════════════
+     MAIN CONTENT
+     ═══════════════════════════════════════════════════ -->
+<main class="gk-main" id="mainContent">
+
+  <!-- ─── NOTE INPUT CARD ─────────────────────────── -->
+  <div class="note-input-wrapper" id="noteInputWrapper">
+    <div class="note-input-card" id="noteInputCard">
+
+      <!-- Collapsed state -->
+      <div class="note-input-collapsed" id="noteCollapsed" onclick="expandNoteInput()" role="button" tabindex="0" aria-label="Take a note">
+        <span>Take a note...</span>
+        <div class="note-input-collapsed-actions" onclick="event.stopPropagation()">
+          <button class="icon-btn" title="New checklist" aria-label="New checklist" onclick="expandNoteInput('checklist')"><span class="material-icons-outlined">check_box</span></button>
+          <button class="icon-btn" title="Add image" aria-label="Add image" onclick="triggerImageUpload()"><span class="material-icons-outlined">image</span></button>
         </div>
-        <hr style="margin:12px 0" />
-        <h3>Subjects</h3>
-        <div id="subjectsList"></div>
-        <div style="margin-top:8px; display:flex; gap:8px; align-items:center">
-          <input id="newSubjectName" placeholder="New subject" style="flex:1; padding:6px" />
-          <input id="newSubjectColor" type="color" value="#ffd966" title="Pick color" />
-          <button id="addSubjectBtn" type="button">Add</button>
+      </div>
+
+      <!-- Expanded state -->
+      <div class="note-input-expanded" id="noteExpanded">
+        <div id="noteImgPreview" class="note-img-preview hidden"></div>
+        <input type="text" id="noteTitle" placeholder="Title" aria-label="Note title">
+        <div id="noteChecklistArea" class="checklist-area hidden">
+          <div id="checklistItems"></div>
+          <button class="add-checklist-item" onclick="addChecklistItem()" type="button">
+            <span>+</span> List item
+          </button>
         </div>
-        <hr style="margin:12px 0" />
-        <h3>Attendance</h3>
-        <div id="attendancePanel" class="attendance-panel">
-          <div style="display:flex; gap:8px; align-items:center; margin-bottom:8px">
-            <select id="attendanceSubject" style="flex:1">
-              <option value="">Select subject</option>
-            </select>
-            <input id="attendanceDate" type="date" />
-          </div>
-          <div style="display:flex; gap:8px; margin-bottom:8px">
-            <button id="markPresentBtn" type="button">Present</button>
-            <button id="markAbsentBtn" type="button">Absent</button>
-          </div>
-          <div id="attendanceSummary" class="attendance-summary"></div>
-        </div>
-        <hr style="margin:12px 0" />
-        <h3>Assignments</h3>
-        <div id="assignmentsPanel" class="assignment-panel">
-          <input id="assignmentTitle" placeholder="Assignment title" style="width:100%; padding:6px; margin-bottom:6px" />
-          <div style="display:flex; gap:8px; margin-bottom:8px; align-items:center">
-            <select id="assignmentSubject" style="flex:1">
-              <option value="">Subject</option>
-            </select>
-            <input id="assignmentDue" type="date" />
-          </div>
-          <div style="display:flex; gap:8px; margin-bottom:8px">
-            <button id="addAssignmentBtn" type="button">Add Assignment</button>
-          </div>
-          <div id="assignmentsList" class="assignments-list"></div>
-        </div>
-      </aside>
-      <div class="input-area">
-        <input id="noteTitle" placeholder="Title (optional)" />
-        <textarea id="noteInput" placeholder="Write your note here... (Markdown supported)"></textarea>
-        <div class="input-row">
-          <input id="noteTags" placeholder="Tags (comma separated)" />
-          <input id="noteSubject" placeholder="Subject / Category (optional)" />
-          <select id="noteFolder" aria-label="Folder" title="Folder">
-            <option value="">No folder</option>
+        <textarea id="noteInput" placeholder="Take a note..." rows="3" aria-label="Note content"></textarea>
+        <div class="note-extra-fields" id="noteExtraFields">
+          <input class="note-extra-field" type="text" id="noteTags" placeholder="Tags (comma separated)" aria-label="Tags">
+          <select class="note-extra-field" id="noteFolder" aria-label="Label / Folder">
+            <option value="">No label</option>
           </select>
-          <input id="noteDueDate" type="date" title="Due Date (optional)" />
+          <input class="note-extra-field" type="date" id="noteDueDate" title="Reminder date" aria-label="Reminder date">
         </div>
-        <!-- Sections: minimal structured blocks inside a note -->
-        <div id="sectionsArea" style="margin-top:10px">
-          <label style="display:block; margin-bottom:6px; color:var(--muted-text-color)">Sections</label>
-          <div id="sectionsList"></div>
-          <div style="display:flex; gap:8px; margin-top:8px; align-items:center">
-            <select id="newSectionType">
-              <option value="lecture">Lecture</option>
-              <option value="important">Important</option>
-              <option value="formula">Formula / Reference</option>
-              <option value="summary">Summary</option>
-              <option value="code">Code / Example</option>
-            </select>
-            <button id="addSectionBtn">Add Section</button>
+        <div class="note-input-toolbar">
+          <div class="toolbar-left">
+            <div style="position:relative">
+              <button class="icon-btn" title="Background options" aria-label="Change note background" onclick="togglePalettePicker(event, null)" id="inputPaletteBtn"><span class="material-icons-outlined">palette</span></button>
+              <div class="palette-picker-popup hidden" id="inputPalettePicker"></div>
+            </div>
+            <button class="icon-btn" title="Remind me" aria-label="Remind me" onclick="toggleReminderPicker(event, null)"><span class="material-icons-outlined">add_alert</span></button>
+            <div class="reminder-picker-popup hidden" id="inputReminderPicker"></div>
+            <button class="icon-btn" title="Add image" aria-label="Add image" onclick="triggerImageUpload()"><span class="material-icons-outlined">image</span></button>
+            <div style="position:relative">
+              <button class="icon-btn" title="More" aria-label="More" onclick="toggleMoreMenu(event, null)" id="inputMoreBtn"><span class="material-icons-outlined">more_vert</span></button>
+              <div class="more-menu-popup hidden" id="inputMoreMenu">
+                 <button class="more-menu-item" onclick="toggleLabelPicker(event, null)">Add label</button>
+                 <button class="more-menu-item">Add drawing</button>
+                 <button class="more-menu-item" onclick="toggleChecklistMode()">Show tick boxes</button>
+              </div>
+              <div class="label-picker-popup hidden" id="inputLabelPicker"></div>
+            </div>
+            <input type="file" id="imageUploadInput" accept="image/*" style="display:none" onchange="handleImageUpload(event)">
+          </div>
+          <div class="toolbar-right">
+            <button class="btn-close-note" onclick="closeNoteInput()">Close</button>
+            <button class="btn-save-note" id="saveNoteBtn" onclick="addNote()">Save</button>
           </div>
         </div>
-        <div class="input-row actions">
-          <label><input type="checkbox" id="livePreviewToggle" /> Live preview</label>
-          <div style="display:flex; align-items:center; gap:10px">
-            <button onclick="addNote()">Add Note</button>
-            <span id="saveStatus" class="save-status" aria-live="polite"></span>
-          </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ─── NOTES VIEW ───────────────────────────────── -->
+  <div id="notesView">
+    <!-- Pinned -->
+    <section class="notes-section" id="pinnedSection" style="display:none;">
+      <div class="notes-section-title">Pinned</div>
+      <div class="notes-grid" id="pinnedContainer"></div>
+    </section>
+
+    <!-- Others / All notes -->
+    <section class="notes-section" id="othersSection">
+      <div class="notes-section-title" id="othersSectionTitle" style="display:none;">Others</div>
+      <div class="notes-grid" id="notesContainer"></div>
+    </section>
+
+    <div class="empty-state hidden" id="emptyState">
+      <div class="empty-state-icon">💡</div>
+      <h3>Notes you add appear here</h3>
+      <p>Take a note with the input above to get started</p>
+    </div>
+  </div>
+
+  <!-- ─── REMINDERS VIEW ─────────────────────────── -->
+  <div id="remindersView" class="hidden">
+    <div class="notes-grid" id="remindersContainer"></div>
+    <div class="empty-state">
+      <div class="empty-state-icon">🔔</div>
+      <h3>Notes with upcoming reminders appear here</h3>
+    </div>
+  </div>
+
+  <!-- ─── ARCHIVE VIEW ──────────────────────────── -->
+  <div id="archiveView" class="hidden">
+    <div class="notes-grid" id="archiveContainer"></div>
+    <div class="empty-state" id="archiveEmpty">
+      <div class="empty-state-icon">📦</div>
+      <h3>Your archived notes appear here</h3>
+    </div>
+  </div>
+
+  <!-- ─── TRASH VIEW ────────────────────────────── -->
+  <div id="trashView" class="hidden">
+    <p style="text-align:center;color:var(--text2);margin-bottom:16px;font-size:0.9rem;">
+      Items in Trash are deleted after 7 days
+    </p>
+    <div style="text-align:center;margin-bottom:16px;">
+      <button onclick="emptyTrash()" style="background:transparent;border:1px solid var(--border);color:var(--text2);padding:8px 16px;border-radius:8px;font-size:0.85rem;" id="emptyTrashBtn">Empty Trash</button>
+    </div>
+    <div class="notes-grid" id="trashContainer"></div>
+    <div class="empty-state" id="trashEmpty">
+      <div class="empty-state-icon">🗑️</div>
+      <h3>No notes in Trash</h3>
+    </div>
+  </div>
+
+  <!-- ─── LABEL VIEW ────────────────────────────── -->
+  <div id="labelView" class="hidden">
+    <div class="notes-grid" id="labelContainer"></div>
+    <div class="empty-state" id="labelEmpty" style="display:none">
+      <div class="empty-state-icon">🏷️</div>
+      <h3>No notes with this label</h3>
+    </div>
+  </div>
+
+</main>
+
+<!-- ═══════════════════════════════════════════════════
+     NOTE EDIT MODAL
+     ═══════════════════════════════════════════════════ -->
+<div class="modal-overlay" id="noteModalOverlay" onclick="closeNoteModal(event)" role="dialog" aria-modal="true" aria-label="Edit note">
+  <div class="note-modal" id="noteModal" onclick="event.stopPropagation()">
+    <div class="note-modal-content hidden" id="modalImgContainer" style="padding:0; position:relative;">
+      <img src="" alt="Note image" class="note-modal-img" id="modalImg" style="width:100%; max-height:400px; object-fit:cover; border-radius:var(--radius-lg) var(--radius-lg) 0 0;">
+      <button class="remove-img" onclick="removeModalImage()" type="button" style="position:absolute;top:16px;right:16px;background:rgba(0,0,0,0.6);border:none;color:white;border-radius:50%;width:32px;height:32px;font-size:16px;cursor:pointer;"><span class="material-icons-outlined" style="font-size:18px;vertical-align:middle;">close</span></button>
+    </div>
+    <div class="note-modal-header">
+      <input type="text" class="note-modal-title" id="modalTitle" placeholder="Title" autocomplete="off">
+      <div class="note-pin-btn" id="modalPinBtn" onclick="toggleModalPin()" title="Pin note">
+        <span class="material-icons-outlined">push_pin</span>
+      </div>
+    </div>
+    <div class="note-modal-body">
+      <div id="modalChecklistArea" class="checklist-area hidden" style="padding:0;margin-bottom:10px;">
+        <div id="modalChecklistItems"></div>
+        <button class="add-checklist-item" onclick="addModalChecklistItem()" type="button">
+          <span>+</span> List item
+        </button>
+      </div>
+      <textarea class="note-modal-content" id="modalContent" placeholder="Note..." aria-label="Note content"></textarea>
+      <div class="note-modal-labels" id="modalLabels"></div>
+      <div class="note-date" id="modalDate"></div>
+    </div>
+    <div class="note-modal-footer">
+      <div class="modal-footer-left">
+        <div style="position:relative">
+          <button class="icon-btn" title="Background options" onclick="togglePalettePicker(event, 'modal')"><span class="material-icons-outlined">palette</span></button>
+          <div class="palette-picker-popup hidden" id="modalPalettePicker"></div>
         </div>
-
-        <div id="livePreview" class="live-preview" aria-hidden="true"></div>
-      </div>
-
-      <section class="search-area">
-        <input id="searchInput" placeholder="Search notes by title or content..." />
-        <div class="filters">
-          <input id="filterTags" placeholder="Filter by tag (comma separated)" />
-          <select id="filterSubject">
-            <option value="">All subjects</option>
-          </select>
+        <div style="position:relative">
+          <button class="icon-btn" title="Remind me" aria-label="Remind me" onclick="toggleReminderPicker(event, 'modal')"><span class="material-icons-outlined">add_alert</span></button>
+          <div class="reminder-picker-popup hidden" id="modalReminderPicker"></div>
         </div>
-          <div class="suggested-tags-area">
-            <input id="newTagInput" placeholder="Add tag" />
-            <button id="addTagBtn" type="button">Add Tag</button>
-            <div id="suggestedTags" class="suggested-tags"></div>
+        <button class="icon-btn" title="Add image" onclick="triggerModalImageUpload()"><span class="material-icons-outlined">image</span></button>
+        <button class="icon-btn" title="Archive" onclick="archiveModalNote()"><span class="material-icons-outlined">archive</span></button>
+        <div style="position:relative">
+          <button class="icon-btn" title="More" onclick="toggleMoreMenu(event, 'modal')"><span class="material-icons-outlined">more_vert</span></button>
+          <div class="more-menu-popup hidden" id="modalMoreMenu">
+             <button class="more-menu-item" onclick="trashModalNote()">Delete note</button>
+             <button class="more-menu-item" onclick="toggleLabelPicker(event, 'modal')">Add label</button>
+             <button class="more-menu-item" onclick="copyModalNote()">Make a copy</button>
+             <button class="more-menu-item" onclick="showVersionHistory(activeNoteId, event)">Version history</button>
           </div>
-      </section>
-    </main>
-
-    <div class="view-controls">
-      <button id="toggleViewBtn" onclick="toggleView()" class="secondary-btn">Switch to Board View</button>
-    </div>
-
-    <div id="notesContainer"></div>
-
-    <div id="kanbanBoard" class="hidden">
-      <div class="kanban-column" id="todo" data-status="todo">
-        <h2>To Do</h2>
-        <div class="kanban-content"></div>
+          <div class="label-picker-popup hidden" id="modalLabelPicker"></div>
+        </div>
+        <input type="file" id="modalImageInput" accept="image/*" style="display:none" onchange="handleModalImageUpload(event)">
       </div>
-      <div class="kanban-column" id="doing" data-status="doing">
-        <h2>Doing</h2>
-        <div class="kanban-content"></div>
-      </div>
-      <div class="kanban-column" id="done" data-status="done">
-        <h2>Done</h2>
-        <div class="kanban-content"></div>
+      <div class="modal-footer-right">
+        <button class="btn-close-note" onclick="saveAndCloseModal()">Close</button>
       </div>
     </div>
+  </div>
+</div>
 
-    <section id="pinnedSection" class="pinned-section" aria-labelledby="pinnedHeading" style="display:none">
-      <h2 id="pinnedHeading">Pinned Notes</h2>
-      <div id="pinnedContainer"></div>
-    </section>
-    <section id="favoritesSection" class="favorites-section" aria-labelledby="favoritesHeading" style="display:none">
-      <h2 id="favoritesHeading">Favorites</h2>
-      <div id="favoritesContainer"></div>
-    </section>
-
-    <section id="recentSection" class="recent-section" aria-labelledby="recentHeading">
-      <h2 id="recentHeading">Recent</h2>
-      <div id="recentContainer" class="recent-container"></div>
-    </section>
-
-    <!-- Mind Map feature card -->
-    <section id="mindmapSection" class="card" aria-labelledby="mindmapHeading" style="margin-top:18px;">
-      <h2 id="mindmapHeading">Mind Map (Beta)</h2>
-      <p>Add a mind map feature to help students visually organize concepts, topics, and study material.</p>
-      <ul>
-        <li><strong>Features</strong></li>
-        <li>Create connected topic nodes</li>
-        <li>Drag-and-drop node positioning</li>
-        <li>Expand/collapse branches</li>
-        <li>Color-coded topic hierarchy</li>
-        <li>Real-time editing</li>
-        <li>Export functionality</li>
-      </ul>
-      <p><strong>Benefits</strong></p>
-      <ul>
-        <li>Improved concept visualization</li>
-        <li>Better study planning</li>
-        <li>Easier topic understanding and revision</li>
-      </ul>
-      <div style="margin-top:10px; display:flex; gap:8px;">
-        <a href="mindmap.html"><button type="button">Open Mind Map</button></a>
-        <button id="createSampleMap">Create Sample Map</button>
+<!-- ═══════════════════════════════════════════════════
+     LABELS MANAGER MODAL
+     ═══════════════════════════════════════════════════ -->
+<div class="modal-overlay" id="labelsModalOverlay" onclick="closeLabelsModal(event)" role="dialog" aria-modal="true" aria-label="Manage labels">
+  <div class="note-modal" id="labelsModal" onclick="event.stopPropagation()" style="max-width:380px;">
+    <div class="labels-modal-body">
+      <h2>Edit labels</h2>
+      <div class="label-create-row">
+        <input type="text" class="label-input" id="newLabelInput" placeholder="Create new label" aria-label="New label name"
+               onkeydown="if(event.key==='Enter'){createLabel();event.preventDefault();}">
+        <button class="btn-create-label" onclick="createLabel()">✓</button>
       </div>
-    </section>
-    <section id="glassSection" class="card" aria-labelledby="glassHeading" style="margin-top:18px;">
-      <h2 id="glassHeading">Glassmorphism UI (Preview)</h2>
-      <p>Implement a modern glassmorphism-based user interface to improve the app's visual appearance.</p>
-      <ul>
-        <li>Frosted glass effect cards</li>
-        <li>Transparent backgrounds & blur</li>
-        <li>Smooth gradients and responsive layout</li>
-        <li>Dark/light mode compatibility</li>
-      </ul>
-      <div style="margin-top:10px; display:flex; gap:8px;">
-        <button id="toggleGlass">Toggle Glass UI</button>
-        <button id="resetTheme">Reset</button>
-      </div>
-    </section>
-    <script>
-      (function(){
-        const btn = document.getElementById('toggleGlass');
-        const reset = document.getElementById('resetTheme');
-        function applyGlass(on){
-          if(on){ document.body.classList.add('glass'); localStorage.setItem('ui.glass','1'); }
-          else { document.body.classList.remove('glass'); localStorage.removeItem('ui.glass'); }
-        }
-        btn && btn.addEventListener('click', ()=> applyGlass(!document.body.classList.contains('glass')));
-        reset && reset.addEventListener('click', ()=> applyGlass(false));
-        // restore
-        if(localStorage.getItem('ui.glass')) applyGlass(true);
-      })();
-    </script>
-    <script>
-      (function(){
-        const btn = document.getElementById('createSampleMap');
-        if(!btn) return;
-        btn.addEventListener('click', ()=>{
-          const w = window.open('mindmap.html', '_blank');
-          if(!w) return alert('Popup blocked — please allow popups or open Mind Map manually.');
-          const maxAttempts = 50; let attempts = 0;
-          const iv = setInterval(()=>{
-            try{
-              if(w.createSampleMap){ w.createSampleMap(); clearInterval(iv); w.focus(); }
-            }catch(e){}
-            attempts++;
-            if(attempts>maxAttempts){ clearInterval(iv); }
-          }, 200);
-        });
-      })();
-    </script>
-
-    <div id="toastContainer" class="toast-container"></div>
-
-    <!-- Markdown renderer and sanitizer -->
-    <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/dompurify@2.4.0/dist/purify.min.js"></script>
-    <script src="script.js"></script>
-    <script>
-      // Minimal skeleton placeholders while app loads
-      (function(){
-        const container = document.getElementById('notesContainer');
-        if(!container) return;
-        // create 4 skeleton cards
-        function showSkeletons(count=4){
-          container.innerHTML = '';
-          for(let i=0;i<count;i++){
-            const card = document.createElement('div');
-            card.className = 'note skeleton-card skeleton';
-            card.innerHTML = '<div style="padding:12px"><div class="skeleton-line full"></div><div class="skeleton-line medium"></div><div class="skeleton-line short"></div></div>';
-            container.appendChild(card);
-          }
-        }
-        // show skeletons briefly while script initializes
-        showSkeletons(4);
-        // remove skeletons after a short delay; displayNotes() will populate real notes
-        window.addEventListener('load', ()=> setTimeout(()=>{ if(typeof displayNotes==='function') displayNotes(); }, 600));
-      })();
-    </script>
-    <!-- Empty state markup and logic -->
-    <div id="emptyState" class="empty-state" style="display:none" aria-hidden="true">
-      <div class="empty-art" aria-hidden="true">
-        <!-- simple illustrative SVG -->
-        <svg width="140" height="100" viewBox="0 0 140 100" fill="none" xmlns="http://www.w3.org/2000/svg">
-          <rect x="6" y="18" width="128" height="64" rx="8" fill="url(#g)" />
-          <rect x="18" y="28" width="36" height="8" rx="3" fill="rgba(255,255,255,0.6)" />
-          <rect x="18" y="44" width="92" height="8" rx="3" fill="rgba(255,255,255,0.45)" />
-          <rect x="18" y="60" width="64" height="8" rx="3" fill="rgba(255,255,255,0.35)" />
-          <defs>
-            <linearGradient id="g" x1="0" x2="1">
-              <stop offset="0" stop-color="#f3f4f6" />
-              <stop offset="1" stop-color="#eef2ff" />
-            </linearGradient>
-          </defs>
-        </svg>
-      </div>
-      <h3>No notes yet</h3>
-      <p>Create visually appealing empty state screens when no notes, folders, or data are available. Quick actions help users get started.</p>
-      <div class="empty-actions">
-        <button id="createFirstNote" class="btn primary">Create First Note</button>
-        <button id="importSample" class="btn">Import Sample</button>
-      </div>
+      <div id="labelsList"></div>
     </div>
-    <script>
-      (function(){
-        const empty = document.getElementById('emptyState');
-        const container = document.getElementById('notesContainer');
-        if(!empty || !container) return;
-        function updateEmpty(){
-          const hasNote = !!container.querySelector('.note');
-          empty.style.display = hasNote ? 'none' : 'flex';
-          empty.setAttribute('aria-hidden', hasNote ? 'true' : 'false');
-        }
-        // initial check after load
-        window.addEventListener('load', ()=> setTimeout(updateEmpty, 200));
-        // observe changes to notes container
-        const observer = new MutationObserver(updateEmpty);
-        observer.observe(container, { childList:true, subtree:true });
+  </div>
+</div>
 
-        // Actions
-        document.getElementById('createFirstNote').addEventListener('click', ()=>{
-          if(typeof addNote === 'function') return addNote();
-          const title = prompt('Note title');
-          if(!title) return;
-          const notes = JSON.parse(localStorage.getItem('notes')||'[]');
-          notes.unshift({ id: Date.now(), title: title, content: '' });
-          localStorage.setItem('notes', JSON.stringify(notes));
-          if(typeof displayNotes === 'function') displayNotes(); else updateEmpty();
-        });
+<!-- ═══════════════════════════════════════════════════
+     TOAST
+     ═══════════════════════════════════════════════════ -->
+<div class="toast-container" id="toastContainer" aria-live="polite"></div>
 
-        document.getElementById('importSample').addEventListener('click', ()=>{
-          const sample = [
-            { id: Date.now(), title: 'Welcome', content: 'This is a sample note to help you get started.' }
-          ];
-          localStorage.setItem('notes', JSON.stringify(sample));
-          if(typeof displayNotes === 'function') displayNotes(); else updateEmpty();
-        });
-      })();
-    </script>
-    </div>
+<!-- ═══════════════════════════════════════════════════
+     SCRIPTS
+     ═══════════════════════════════════════════════════ -->
+<script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/dompurify@2.4.0/dist/purify.min.js"></script>
+<script src="auth.js"></script>
+<script src="script.js"></script>
+
 </body>
 </html>
-
