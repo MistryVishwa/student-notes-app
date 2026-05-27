@@ -1,0 +1,106 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Goals Dashboard</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="style.css">
+    <link rel="stylesheet" href="goals.css">
+</head>
+<body>
+
+    <div class="container goals-container">
+        <div class="topbar">
+            <a class="nav-link" href="index.html">← Notes</a>
+        </div>
+
+        <h1>Target & Progress Tracking</h1>
+
+        <!-- Overall Productivity Stats -->
+        <div class="card" aria-label="Productivity Dashboard">
+            <h2 class="card-title">Overall Progress</h2>
+            <div class="progress-bar-container large">
+                <div class="progress-bar-fill" id="overallProgressFill" style="width: 0%;"></div>
+            </div>
+            <div class="stats" style="margin-top: 15px;">
+                <div class="stat">
+                    <div class="stat-label">Total Tasks</div>
+                    <div class="stat-value" id="statTotal">0</div>
+                </div>
+                <div class="stat">
+                    <div class="stat-label">Completed</div>
+                    <div class="stat-value" id="statCompleted">0</div>
+                </div>
+                <div class="stat">
+                    <div class="stat-label">Pending</div>
+                    <div class="stat-value" id="statPending">0</div>
+                </div>
+                <div class="stat">
+                    <div class="stat-label">Completion %</div>
+                    <div class="stat-value" id="statPercentage">0%</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Goals Sections Container -->
+        <div class="goals-grid">
+            
+            <!-- Daily Goals -->
+            <div class="kanban-column goals-column" id="dailySection">
+                <h2>Daily Goals</h2>
+                <div class="progress-bar-container">
+                    <div class="progress-bar-fill" id="dailyProgressFill" style="width: 0%;"></div>
+                </div>
+                <div class="input-area" style="margin-top: 15px;">
+                    <input type="text" id="dailyTitle" placeholder="Task Title (e.g. Read Chapter 1)" />
+                    <textarea id="dailyDesc" placeholder="Optional description..." style="height: 60px;"></textarea>
+                    <button onclick="addGoal('daily')">Add Daily Goal</button>
+                </div>
+                <div class="kanban-content goals-list" id="dailyList">
+                    <!-- Goal Cards go here -->
+                </div>
+            </div>
+
+            <!-- Weekly Goals -->
+            <div class="kanban-column goals-column" id="weeklySection">
+                <h2>Weekly Goals</h2>
+                <div class="progress-bar-container">
+                    <div class="progress-bar-fill" id="weeklyProgressFill" style="width: 0%;"></div>
+                </div>
+                <div class="input-area" style="margin-top: 15px;">
+                    <input type="text" id="weeklyTitle" placeholder="Task Title (e.g. Finish Assignment)" />
+                    <textarea id="weeklyDesc" placeholder="Optional description..." style="height: 60px;"></textarea>
+                    <button onclick="addGoal('weekly')">Add Weekly Goal</button>
+                </div>
+                <div class="kanban-content goals-list" id="weeklyList">
+                    <!-- Goal Cards go here -->
+                </div>
+            </div>
+
+            <!-- Monthly Goals -->
+            <div class="kanban-column goals-column" id="monthlySection">
+                <h2>Monthly Goals</h2>
+                <div class="progress-bar-container">
+                    <div class="progress-bar-fill" id="monthlyProgressFill" style="width: 0%;"></div>
+                </div>
+                <div class="input-area" style="margin-top: 15px;">
+                    <input type="text" id="monthlyTitle" placeholder="Task Title (e.g. Complete Project)" />
+                    <textarea id="monthlyDesc" placeholder="Optional description..." style="height: 60px;"></textarea>
+                    <button onclick="addGoal('monthly')">Add Monthly Goal</button>
+                </div>
+                <div class="kanban-content goals-list" id="monthlyList">
+                    <!-- Goal Cards go here -->
+                </div>
+            </div>
+
+        </div>
+
+    </div>
+
+    <!-- Toast Notification Container -->
+    <div id="toastContainer" class="toast-container"></div>
+
+    <script src="goals.js"></script>
+</body>
+</html>

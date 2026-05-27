@@ -1,0 +1,215 @@
+/* Goals Dashboard Specific Styles */
+
+.goals-container {
+    max-width: 1200px;
+    width: 100%;
+}
+
+.goals-grid {
+    display: grid;
+    grid-template-columns: repeat(1, 1fr);
+    gap: 20px;
+    margin-top: 20px;
+}
+
+@media (min-width: 768px) {
+    .goals-grid {
+        grid-template-columns: repeat(3, 1fr);
+    }
+}
+
+.goals-column {
+    min-height: 500px;
+}
+
+.goals-column h2 {
+    color: var(--primary);
+    border: 2px solid var(--primary);
+    background: rgba(79, 70, 229, 0.1);
+    padding: 10px;
+    border-radius: 8px;
+    box-shadow: 0 0 12px rgba(79, 70, 229, 0.2);
+    margin-bottom: 10px;
+}
+
+.goals-column#dailySection h2 {
+    color: #10B981;
+    border-color: #10B981;
+    background: rgba(16, 185, 129, 0.1);
+    box-shadow: 0 0 12px rgba(16, 185, 129, 0.2);
+}
+
+.goals-column#weeklySection h2 {
+    color: #F59E0B;
+    border-color: #F59E0B;
+    background: rgba(245, 158, 11, 0.1);
+    box-shadow: 0 0 12px rgba(245, 158, 11, 0.2);
+}
+
+.goals-column#monthlySection h2 {
+    color: #3B82F6;
+    border-color: #3B82F6;
+    background: rgba(59, 130, 246, 0.1);
+    box-shadow: 0 0 12px rgba(59, 130, 246, 0.2);
+}
+
+.progress-bar-container {
+    width: 100%;
+    height: 12px;
+    background: #E5E7EB;
+    border-radius: 6px;
+    overflow: hidden;
+    margin-top: 5px;
+}
+
+.progress-bar-container.large {
+    height: 20px;
+    border-radius: 10px;
+}
+
+.progress-bar-fill {
+    height: 100%;
+    background: var(--primary);
+    border-radius: 6px;
+    transition: width 0.5s ease-in-out;
+}
+
+#dailyProgressFill { background: #10B981; }
+#weeklyProgressFill { background: #F59E0B; }
+#monthlyProgressFill { background: #3B82F6; }
+
+.goal-card {
+    background: white;
+    padding: 15px;
+    border-radius: 10px;
+    box-shadow: var(--shadow-sm);
+    border: 1px solid #F3F4F6;
+    margin-bottom: 15px;
+    position: relative;
+    transition: all 0.3s ease;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.goal-card:hover {
+    box-shadow: var(--shadow-lg);
+    transform: translateY(-2px);
+}
+
+.goal-card.completed {
+    opacity: 0.7;
+    background: #F9FAFB;
+    border-color: #E5E7EB;
+}
+
+.goal-card.completed .goal-title {
+    text-decoration: line-through;
+    color: var(--text-muted);
+}
+
+.goal-header {
+    display: flex;
+    align-items: flex-start;
+    gap: 10px;
+}
+
+.goal-title {
+    font-weight: 600;
+    font-size: 1rem;
+    flex-grow: 1;
+    word-break: break-word;
+    color: var(--text-main);
+    transition: color 0.3s ease;
+}
+
+.goal-desc {
+    font-size: 0.85rem;
+    color: var(--text-muted);
+    word-break: break-word;
+    margin-left: 28px; /* Align with title after checkbox */
+}
+
+/* Custom Checkbox for goals */
+.goal-checkbox {
+    appearance: none;
+    background-color: #fff;
+    margin: 0;
+    font: inherit;
+    color: currentColor;
+    width: 1.15em;
+    height: 1.15em;
+    border: 2px solid var(--border-color);
+    border-radius: 0.15em;
+    display: grid;
+    place-content: center;
+    cursor: pointer;
+    transition: all 0.2s ease-in-out;
+}
+
+.goal-checkbox::before {
+    content: "";
+    width: 0.65em;
+    height: 0.65em;
+    transform: scale(0);
+    transition: 120ms transform ease-in-out;
+    box-shadow: inset 1em 1em white;
+    background-color: white;
+    transform-origin: center;
+    clip-path: polygon(14% 44%, 0 65%, 50% 100%, 100% 16%, 80% 0%, 43% 62%);
+}
+
+.goal-checkbox:checked {
+    background-color: #10B981;
+    border-color: #10B981;
+}
+
+.goal-checkbox:checked::before {
+    transform: scale(1);
+}
+
+.goal-delete-btn {
+    position: absolute;
+    top: 10px;
+    right: 10px;
+    background: #EF4444;
+    color: white;
+    border: none;
+    width: 24px;
+    height: 24px;
+    border-radius: 50%;
+    padding: 0;
+    cursor: pointer;
+    font-size: 12px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    opacity: 0;
+    transition: all 0.2s ease;
+}
+
+.goal-card:hover .goal-delete-btn {
+    opacity: 1;
+}
+
+.goal-delete-btn:hover {
+    background: #DC2626;
+    transform: scale(1.1);
+}
+
+.goals-list {
+    margin-top: 15px;
+    flex-grow: 1;
+    display: flex;
+    flex-direction: column;
+}
+
+.empty-state {
+    text-align: center;
+    padding: 30px 10px;
+    color: var(--text-muted);
+    font-style: italic;
+    background: rgba(255, 255, 255, 0.5);
+    border-radius: 8px;
+    border: 1px dashed var(--border-color);
+}
