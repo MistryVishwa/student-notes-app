@@ -2,9 +2,21 @@ let notes = (JSON.parse(localStorage.getItem("notes")) || []).map(n =>
     typeof n === 'string' ? { text: n, date: "Created: " + new Date().toLocaleString() } : n
 );
 
+// Data Migration
+notes = notes.map((note, index) => {
+    if (typeof note === "string") {
+        return { id: Date.now() + index, text: note, status: 'todo', pinned: false };
+    }
+    if (note.pinned === undefined) {
+        note.pinned = false;
+    }
+    return note;
+});
+localStorage.setItem("notes", JSON.stringify(notes));
 let currentView = "list";
 const THEME_KEY = "theme";
 
+let currentView = "list"; // default view
 
 displayNotes();
 initTheme();
@@ -170,6 +182,25 @@ function normalizeNotes(){
 }
 
 
+function toggleView() {
+    currentView = currentView === "list" ? "board" : "list";
+    let btn = document.getElementById("toggleViewBtn");
+    btn.innerText = currentView === "list" ? "Switch to Board View" : "Switch to List View";
+    
+    let listContainer = document.getElementById("notesContainer");
+    let boardContainer = document.getElementById("kanbanBoard");
+
+    if (currentView === "list") {
+        listContainer.classList.remove("hidden");
+        boardContainer.classList.add("hidden");
+    } else {
+        listContainer.classList.add("hidden");
+        boardContainer.classList.remove("hidden");
+    }
+    
+    displayNotes();
+}
+
 function addNote() {
     let title = document.getElementById("noteTitle").value.trim();
     let input = document.getElementById("noteInput");
@@ -183,6 +214,20 @@ function addNote() {
         return;
     }
 
+    let newNote = {
+        id: Date.now(),
+        text: noteText,
+        status: 'todo',
+    if (notes.some(n => n.text === noteText)) {
+
+
+    if (notes.includes(noteText)) {
+
+        alert("This note already exists!");
+        return;
+    }
+
+    notes.push({ text: noteText, date: "Created: " + new Date().toLocaleString() });
     let dueDate = document.getElementById('noteDueDate')?.value || '';
 
     const newNote = {
@@ -198,10 +243,10 @@ function addNote() {
         status: 'todo'
     };
 
-
-    notes.unshift(newNote);
+    notes.push(newNote);
 
     localStorage.setItem("notes", JSON.stringify(notes));
+    input.value = "";
 
     document.getElementById('noteTitle').value = '';
     document.getElementById('noteInput').value = '';
@@ -231,6 +276,7 @@ function addNote() {
 }
 
 function displayNotes(){
+    const sortedNotes = [...notes].sort((a, b) => (b.pinned ? 1 : 0) - (a.pinned ? 1 : 0));
     let container = document.getElementById("notesContainer");
 
     let pinnedContainer = document.getElementById('pinnedContainer');
@@ -361,25 +407,45 @@ function displayNotes(){
         }
     });
 
-    // Show or hide pinned section
-    if(pinnedContainer.children.length){
-        pinnedSection.style.display = '';
+    if (currentView === "list") {
+        let container = document.getElementById("notesContainer");
+        container.innerHTML = "";
+        sortedNotes.forEach((note) => {
+            container.innerHTML += createNoteHTML(note);
+        });
     } else {
-        pinnedSection.style.display = 'none';
-    }
-    if(favoritesContainer && favoritesSection){
-        if(favoritesContainer.children.length){
-            favoritesSection.style.display = '';
-        } else {
-            favoritesSection.style.display = 'none';
-        }
-    }
+        let todoContainer = document.querySelector("#todo .kanban-content");
+        let doingContainer = document.querySelector("#doing .kanban-content");
+        let doneContainer = document.querySelector("#done .kanban-content");
+        
+        todoContainer.innerHTML = "";
+        doingContainer.innerHTML = "";
+        doneContainer.innerHTML = "";
 
-    // refresh suggested tag counts
-    renderSuggestedTags();
+        sortedNotes.forEach((note) => {
+            let html = createNoteHTML(note);
+            if (note.status === 'todo') todoContainer.innerHTML += html;
+            else if (note.status === 'doing') doingContainer.innerHTML += html;
+            else if (note.status === 'done') doneContainer.innerHTML += html;
+            else todoContainer.innerHTML += html; // fallback
+        });
+    }
 }
 
+function createNoteHTML(note) {
+    return `
+        <div class="note ${note.pinned ? 'pinned' : ''}" draggable="true" ondragstart="dragStart(event, ${note.id})">
+            ${note.text}
+            <button class="pin-btn ${note.pinned ? 'active' : ''}" onclick="togglePin(${note.id})" title="Pin to top">📌</button>
+            <button class="delete-btn" onclick="deleteNote(${note.id})">X</button>
+        </div>
+    `;
+}
 
+function togglePin(id) {
+    let note = notes.find(n => n.id === id);
+    if (note) {
+        note.pinned = !note.pinned;
 function editNote(index){
     let newNote = prompt("Edit your note:", notes[index].text);
     if(newNote !== null && newNote.trim() !== ""){
@@ -446,113 +512,54 @@ function highlightInElement(element, query){
 }
 
 function deleteNote(id){
-    const idx = notes.findIndex(n=>String(n.id) === String(id));
-    if(idx === -1) return;
-    notes.splice(idx,1);
-
-
-    localStorage.setItem(
-        "notes",
-        JSON.stringify(notes)
-    );
-
-    refreshFilters();
+    notes = notes.filter(n => n.id !== id);
+    localStorage.setItem("notes", JSON.stringify(notes));
     displayNotes();
 }
 
-function togglePin(id){
-    const idx = notes.findIndex(n=>String(n.id) === String(id));
-    if(idx === -1) return;
-    notes[idx].pinned = !notes[idx].pinned;
-    localStorage.setItem('notes', JSON.stringify(notes));
-    displayNotes();
+// Drag and Drop Logic
+function dragStart(event, id) {
+    event.dataTransfer.setData("text/plain", id);
+    // Use timeout to hide the element while dragging for better visual
+    setTimeout(() => {
+        event.target.classList.add("dragging");
+    }, 0);
 }
 
-
-function toggleFavorite(id){
-    const idx = notes.findIndex(n=>String(n.id) === String(id));
-    if(idx === -1) return;
-    notes[idx].favorite = !notes[idx].favorite;
-    localStorage.setItem('notes', JSON.stringify(notes));
-    displayNotes();
-}
-
-// Export local storage notes array as a downloadable JSON file
-function exportNotes() {
-    if (notes.length === 0) {
-        alert("You do not have any saved notes to export!");
-        return;
+document.addEventListener("dragend", (event) => {
+    if (event.target.classList.contains("note")) {
+        event.target.classList.remove("dragging");
     }
+});
 
-    // Convert notes data structure to a string
-    const jsonString = JSON.stringify(notes, null, 2);
-    const blob = new Blob([jsonString], { type: "application/json" });
-    
-    // Create a temporary hidden link element to force browser download triggers
-    const downloadAnchor = document.createElement('a');
-    const timestamp = new Date().toISOString().split('T')[0];
-    
-    downloadAnchor.href = URL.createObjectURL(blob);
-    downloadAnchor.download = `student_notes_backup_${timestamp}.json`;
-    
-    document.body.appendChild(downloadAnchor);
-    downloadAnchor.click();
-    
-    // Cleanup temporary DOM elements
-    document.body.removeChild(downloadAnchor);
-    URL.revokeObjectURL(downloadAnchor.href);
+function allowDrop(event) {
+    event.preventDefault();
+    let column = event.target.closest('.kanban-column');
+    if (column) {
+        column.classList.add("drag-over");
+    }
 }
 
-// Import and append unique notes from a structural JSON file
-function importNotes(event) {
-    const file = event.target.files[0];
-    if (!file) return;
+function dragLeave(event) {
+    let column = event.target.closest('.kanban-column');
+    if (column) {
+        column.classList.remove("drag-over");
+    }
+}
 
-    const reader = new FileReader();
-    reader.onload = function(e) {
-        try {
-            const importedData = JSON.parse(e.target.result);
-
-            // Validation Guardrail: Ensure parsed file content is a valid Array
-            if (Array.isArray(importedData)) {
-                
-                // Advanced Tip: Filter out notes that already exist in the app to prevent duplicates
-                const uniqueImportedData = importedData.filter(importedNote => {
-                    // If the imported note is an object (in case the schema changes later)
-                    if (typeof importedNote === 'object' && importedNote !== null) {
-                        return !notes.some(existingNote => 
-                            typeof existingNote === 'object' && existingNote !== null 
-                            ? existingNote.text === importedNote.text 
-                            : existingNote === importedNote.text
-                        );
-                    }
-                    // Standard string matching for the current codebase setup
-                    return !notes.includes(importedNote);
-                });
-
-                if (uniqueImportedData.length === 0) {
-                    alert("All notes in this backup are already present in your app!");
-                    event.target.value = '';
-                    return;
-                }
-
-                const userConfirmation = confirm(`Found ${uniqueImportedData.length} new unique notes. Do you want to add them to your existing notes?`);
-                
-                if (userConfirmation) {
-                    // Combine existing notes with the unique imported ones
-                    notes = [...notes, ...uniqueImportedData];
-                    
-                    localStorage.setItem("notes", JSON.stringify(notes));
-                    displayNotes();
-                    alert("New notes imported and added successfully!");
-                }
-            } else {
-                alert("Import failed: JSON structure must be a valid array list.");
-            }
-        } catch (error) {
-            alert("Error parsing backup file. Please ensure it is a valid, uncorrupted .json file.");
-        }
+function drop(event) {
+    event.preventDefault();
+    let column = event.target.closest('.kanban-column');
+    if (column) {
+        column.classList.remove("drag-over");
+        let newStatus = column.getAttribute('data-status');
+        let noteId = parseInt(event.dataTransfer.getData("text/plain"));
         
+        let note = notes.find(n => n.id === noteId);
+        if (note) {
+            let oldStatus = note.status;
+            note.status = newStatus;
+            localStorage.setItem("notes", JSON.stringify(notes));
         // Reset the input value so the same file can be re-uploaded if modified
         event.target.value = '';
     };
@@ -601,16 +608,9 @@ document.addEventListener('DOMContentLoaded', () => {
             const txt = e.target.value.trim();
             filterTags = txt ? txt.split(',').map(t=>t.trim()).filter(Boolean) : [];
             displayNotes();
-        });
-    }
 
-    if(filterSubjectSelect){
-        filterSubjectSelect.addEventListener('change', (e)=>{
-            filterSubject = e.target.value;
-            displayNotes();
-        });
-    }
-
+            if (oldStatus !== 'done' && newStatus === 'done') {
+                showToast("🎉 Congratulations on completing a task!");
     refreshFilters();
     // Restore any unsaved draft if present
     restoreDraft();
@@ -723,95 +723,32 @@ document.addEventListener('DOMContentLoaded', () => {
                 livePreview.style.display = 'none';
                 return;
             }
-            livePreview.style.display = 'block';
-            const raw = noteInput.value || '';
-            let html = raw;
-            try{ html = window.marked ? marked.parse(raw) : escapeHtml(raw); }catch(e){ html = escapeHtml(raw); }
-            const safe = (window.DOMPurify && DOMPurify.sanitize) ? DOMPurify.sanitize(html) : html;
-            livePreview.innerHTML = safe;
-        };
-
-        noteInput.addEventListener('input', updatePreview);
-        livePreviewToggle.addEventListener('change', updatePreview);
-    }
-});
-
-function initTheme(){
-    const toggleBtn = document.getElementById("themeToggle");
-
-    const savedTheme = localStorage.getItem(THEME_KEY); // "light" | "dark" | null
-    const systemPrefersDark = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches;
-
-
-    const initialTheme = savedTheme === "dark" || savedTheme === "light"
-        ? savedTheme
-        : (systemPrefersDark ? "dark" : "light");
-
-    applyTheme(initialTheme, false);
-
-    if(toggleBtn){
-        toggleBtn.addEventListener('click', () => {
-            const current = document.documentElement.getAttribute('data-theme') || 'light';
-            const next = current === 'dark' ? 'light' : 'dark';
-            applyTheme(next, true);
-        });
-    }
-}
-
-function applyTheme(theme, persist){
-    document.documentElement.setAttribute('data-theme', theme);
-
-    if(persist){
-        localStorage.setItem(THEME_KEY, theme);
-    }
-
-
-    // Update toggle icon for better UX
-    const sunIcon = document.querySelector('.theme-icon--sun');
-    const moonIcon = document.querySelector('.theme-icon--moon');
-
-    if(sunIcon && moonIcon){
-        if(theme === 'dark'){
-            sunIcon.style.display = 'none';
-            moonIcon.style.display = 'inline';
-        } else {
-            sunIcon.style.display = 'inline';
-            moonIcon.style.display = 'none';
         }
     }
 }
 
-// Basic XSS protection since we render notes as HTML via innerHTML.
-function escapeHtml(str){
-    return String(str)
-        .replaceAll('&', '&amp;')
-        .replaceAll('<', '<')
-        .replaceAll('>', '>')
-        .replaceAll('"', '"')
-        .replaceAll("'", '&#039;');
-}
+function showToast(message) {
+    let container = document.getElementById("toastContainer");
+    if (!container) return;
 
-}
-
-function escapeHtml(str){
-    return String(str)
-        .replaceAll('&', '&amp;')
-        .replaceAll('<', '&lt;')
-        .replaceAll('>', '&gt;')
-        .replaceAll('"', '&quot;')
-        .replaceAll("'", '&#039;');
-}
-
-function escapeRegExp(string){
-    return String(string).replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-}
-
-function highlightHtml(text, query){
-    if(!query) return escapeHtml(text);
-    const q = escapeRegExp(query.trim());
-    if(!q) return escapeHtml(text);
-    const re = new RegExp(`(${q})`, 'ig');
-    return escapeHtml(text).replace(re, '<mark class="highlight">$1</mark>');
+    let toast = document.createElement("div");
+    toast.className = "toast";
+    toast.innerText = message;
+    
+    container.appendChild(toast);
+    
+    // Trigger animation
+    setTimeout(() => {
+        toast.classList.add("show");
+    }, 10);
+    
+    // Remove after 3 seconds
+    setTimeout(() => {
+        toast.classList.remove("show");
+        setTimeout(() => {
+            toast.remove();
+        }, 300);
+    }, 3000);
 }
 
 // ---------------------
