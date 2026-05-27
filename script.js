@@ -30,6 +30,46 @@ let currentView = "list"; // default view
 
 displayNotes();
 initTheme();
+
+// Auto-save configuration
+const AUTO_SAVE_KEY = 'draft';
+const AUTO_SAVE_DELAY = 2000; // ms of inactivity before saving
+let autoSaveTimer = null;
+
+function scheduleAutoSave(){
+    const statusEl = document.getElementById('saveStatus');
+    if(statusEl) statusEl.textContent = 'Saving...';
+    if(autoSaveTimer) clearTimeout(autoSaveTimer);
+    autoSaveTimer = setTimeout(()=>{
+        saveDraft();
+        if(statusEl) {
+            const time = new Date();
+            statusEl.textContent = 'Saved';
+            // briefly show saved then clear after 2s
+            setTimeout(()=>{ if(statusEl) statusEl.textContent = ''; }, 2000);
+        }
+        autoSaveTimer = null;
+    }, AUTO_SAVE_DELAY);
+}
+
+function saveDraft(){
+    const title = document.getElementById('noteTitle')?.value || '';
+    const content = document.getElementById('noteInput')?.value || '';
+    const tags = document.getElementById('noteTags')?.value || '';
+    const subject = document.getElementById('noteSubject')?.value || '';
+
+    const draft = {
+        title, content, tags, subject, savedAt: Date.now()
+    };
+    try{ localStorage.setItem(AUTO_SAVE_KEY, JSON.stringify(draft)); }catch(e){ console.warn('Failed to save draft', e); }
+}
+
+let currentView = "list"; // default view
+
+normalizeNotes();
+
+displayNotes();
+initTheme();
 setupInputListeners();
 updateSidebar();
 
@@ -233,7 +273,62 @@ function displayNotes(){
             rawHtml = escapeHtml(note.content || '');
         }
 
-        const safeHtml = (window.DOMPurify && DOMPurify.sanitize) ? DOMPurify.sanitize(rawHtml) : rawHtml;
+
+
+    // Sort Logic: Pinned first, then by the selected Sort Order
+    notes.sort((a, b) => {
+        if (a.pinned !== b.pinned) return b.pinned ? 1 : -1;
+        
+        if (sortOrder === "asc") return (a.title || a.text).localeCompare(b.title || b.text);
+        if (sortOrder === "desc") return (b.title || b.text).localeCompare(a.title || a.text);
+        return 0;
+    });
+
+
+    if (notes.length === 0) {
+        container.innerHTML = `
+            <div class="empty-state">
+                <p>No notes found. Start by adding your first note above!</p>
+            </div>
+        `;
+        return;
+    }
+
+    notes.forEach((note,index)=>{
+        if (!!note.archived !== showArchived) return;
+        if (searchQuery) {
+            const matches = 
+                (note.title || "").toLowerCase().includes(searchQuery) ||
+                (note.text || "").toLowerCase().includes(searchQuery) ||
+                (note.tags || "").toLowerCase().includes(searchQuery) ||
+                (note.subject || "").toLowerCase().includes(searchQuery);
+            if (!matches) return;
+        }
+
+        const tagsHtml = note.tags ? note.tags.split(',').map(t => `<span class="note-tag">#${t.trim()}</span>`).join('') : '';
+        
+        container.innerHTML += `
+            <div class="note ${note.pinned ? 'pinned' : ''} ${note.archived ? 'archived' : ''}">
+                <div class="note-actions">
+                    <button class="icon-btn pin-btn" onclick="togglePin(${index})" title="${note.pinned ? 'Unpin' : 'Pin'}">
+                        ${note.pinned ? '📍' : '📌'}
+                    </button>
+                    <button class="icon-btn archive-btn" onclick="toggleArchive(${index})" title="${note.archived ? 'Restore' : 'Archive'}">
+                        ${note.archived ? '📥' : '📦'}
+                    </button>
+                    <button class="icon-btn edit-btn" onclick="editNote(${index})" aria-label="Edit">✎</button>
+                    <button class="icon-btn delete-btn" onclick="deleteNote(${index})" aria-label="Delete">✕</button>
+                </div>
+                ${note.title ? `<strong class="note-title">${escapeHtml(note.title)}</strong>` : ''}
+                <div class="note-text">${renderMarkdown(note.text)}</div>
+                <div class="note-footer" style="margin-top:10px">
+                    ${tagsHtml}
+                </div>
+                <div class="note-date">${note.date}</div>
+            </div>
+        `;
+    });
+}
 
 
     // Sort Logic: Pinned first, then by the selected Sort Order

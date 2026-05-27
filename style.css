@@ -191,12 +191,12 @@ body{
     color: var(--text-color);
 }
 
+
 .input-grid {
     display: grid;
     grid-template-columns: 1fr 1fr 1fr;
     gap: 12px;
     margin-top: 12px;
-
 h1{
     text-align:center;
 }
@@ -281,18 +281,6 @@ textarea{
                 color 0.3s ease,
                 border-color 0.3s ease;
 }
-
-textarea::placeholder{
-    color: color-mix(in srgb, var(--muted-text-color) 80%, transparent);
-
-
-textarea::placeholder{
-    color: color-mix(in srgb, var(--muted-text-color) 80%, transparent);
-
-
-textarea::placeholder{
-    color: color-mix(in srgb, var(--muted-text-color) 80%, transparent);
-
 
 textarea::placeholder{
     color: color-mix(in srgb, var(--muted-text-color) 80%, transparent);
@@ -559,6 +547,7 @@ button:hover {
 .note.pinned {
     border: 2px solid var(--primary-bg);
     box-shadow: 0 4px 12px var(--shadow-color);
+
 .view-controls {
     display: flex;
     justify-content: flex-end;
